@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
+import RegisterPage from './pages/RegisterPage'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
               <p>Les routes seront ajoutées par les membres</p>
             </div>
           } />
+          <Route path="/register" element={<RegisterPage />} />  {/* ← AJOUTÉ */}
         </Routes>
       </div>
     </BrowserRouter>

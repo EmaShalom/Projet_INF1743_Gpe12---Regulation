@@ -3,6 +3,8 @@
  * Créé par le chef de groupe
  */
 
+
+
 // Types de demandes
 export const REQUEST_TYPES = {
   TECHNIQUE: 'Technique',
