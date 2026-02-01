@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import LoginPage from './pages/LoginPage'  // AJOUTER
-import RegisterPage from './pages/RegisterPage'  // ← AJOUTÉ
+import RegisterPage from './pages/RegisterPage'  // ← AJOUTÉnpm
 
 function App() {
   return (
