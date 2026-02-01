@@ -11,7 +11,7 @@ function App() {
         <p>Projet INF1743 - Livrable L1</p>
         <p>✅ Structure de base créée par le chef de groupe</p>
         <p>⏳ Les membres vont ajouter leurs pages ici...</p>
-        
+
         <Routes>
           <Route path="/" element={
             <div>
