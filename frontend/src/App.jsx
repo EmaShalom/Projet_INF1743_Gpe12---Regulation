@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import LoginPage from './pages/LoginPage'  // AJOUTER
-import RegisterPage from './pages/RegisterPage'  // ← AJOUTÉ
+import RegisterPage from './pages/RegisterPage'  // ← AJOUTÉnpm
 
 function App() {
   return (
@@ -11,7 +11,6 @@ function App() {
         <p>Projet INF1743 - Livrable L1</p>
         <p>✅ Structure de base créée par le chef de groupe</p>
         <p>⏳ Les membres vont ajouter leurs pages ici...</p>
-        
         <Routes>
           <Route path="/" element={
             <div>
