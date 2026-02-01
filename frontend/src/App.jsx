@@ -5,6 +5,8 @@ import RegisterPage from './pages/RegisterPage'  // ← AJOUTÉ
 import DashboardPage from './pages/DashboardPage'  // AJOUTER
 
 import RequestDetailPage from './pages/RequestDetailPage'  // AJOUTER
+import CreateRequestPage from './pages/CreateRequestPage'  // AJOUTER
+
 
 
 function App() {
@@ -26,6 +28,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />  {/* AJOUTER */}
           <Route path="/register" element={<RegisterPage />} />  {/* ← AJOUTÉ */}
           <Route path="/dashboard" element={<DashboardPage />} />  {/* AJOUTER */}
+          <Route path="/requests/new" element={<CreateRequestPage />} />  {/* AJOUTER */}
 
           <Route path="/requests/:id" element={<RequestDetailPage />} />  {/* AJOUTER */}
 
