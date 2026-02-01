@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import LoginPage from './pages/LoginPage'  // AJOUTER
-import RegisterPage from './pages/RegisterPage'  // ← AJOUTÉnpm
+import RegisterPage from './pages/RegisterPage'  // ← AJOUTÉ
+import DashboardPage from './pages/DashboardPage'  // AJOUTER
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           } />
           <Route path="/login" element={<LoginPage />} />  {/* AJOUTER */}
           <Route path="/register" element={<RegisterPage />} />  {/* ← AJOUTÉ */}
+          <Route path="/dashboard" element={<DashboardPage />} />  {/* AJOUTER */}
         </Routes>
       </div>
     </BrowserRouter>
