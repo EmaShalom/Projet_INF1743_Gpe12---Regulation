@@ -1,0 +1,24 @@
+/* Layout.css */
+
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-content {
+  flex: 1;
+}
+
+.layout-footer {
+  background: var(--color-text-primary);
+  color: white;
+  padding: var(--spacing-lg);
+  text-align: center;
+  margin-top: auto;
+}
+
+.layout-footer p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
