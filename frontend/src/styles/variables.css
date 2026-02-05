@@ -4,15 +4,14 @@
  */
 
 :root {
-  /* === COULEURS PRINCIPALES === */
-  --color-primary: #667eea;
-  --color-primary-dark: #5568d3;
-  --color-primary-light: #818cf8;
-  
-  --color-secondary: #764ba2;
-  --color-secondary-dark: #643a8b;
-  --color-secondary-light: #9d6ec9;
-  
+  --color-primary: #1f6f8b;        /* couleur principale (image) */
+--color-primary-dark: #195a70;   /* plus foncé */
+--color-primary-light: #4a8fa6;  /* plus clair */
+
+--color-secondary: #0f4c5c;      /* secondaire profond */
+--color-secondary-dark: #0b3a46; /* très foncé */
+--color-secondary-light: #7fb3c6;/* pastel */
+
   /* === COULEURS DE STATUT === */
   --status-submitted: #ffc107;
   --status-in-progress: #17a2b8;

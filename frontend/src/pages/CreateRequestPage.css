@@ -2,7 +2,7 @@
 
 .create-request-page {
   min-height: 100vh;
-  background: var(--color-bg-secondary);
+  background: transparent;
   padding: var(--spacing-xl);
 }
 
@@ -17,11 +17,12 @@
   align-items: center;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm);
+  font-size: 0.95rem; /* plus grand que sm */
+  font-weight: 1000;
 }
 
 .breadcrumb a {
-  color: var(--color-primary);
+  color: #dee9eb; /* bleu bien visible */
   text-decoration: none;
 }
 
@@ -41,13 +42,16 @@
 
 .page-header h1 {
   font-size: var(--font-size-3xl);
-  color: var(--color-text-primary);
+  color: #eaecf0; /* noir profond */
+  font-weight: 1000;
   margin-bottom: var(--spacing-sm);
 }
 
 .page-header p {
-  color: var(--color-text-secondary);
+  color: #374151; /* gris foncé très lisible */
   font-size: var(--font-size-base);
+  font-weight: 500;
+  line-height: 1.7;
 }
 
 /* Formulaire */
@@ -207,15 +211,16 @@
 
 /* Aide */
 .help-card {
-  background: rgba(102, 126, 234, 0.05);
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  background: #0b0f1a; /* noir bleuté élégant */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-lg);
 }
 
 .help-card h3 {
   font-size: var(--font-size-lg);
-  color: var(--color-text-primary);
+  color: #c2b8b8;
+  font-weight: 700; /* gras */
   margin-bottom: var(--spacing-md);
 }
 
@@ -225,9 +230,10 @@
 }
 
 .help-card li {
-  color: var(--color-text-secondary);
+  color: #ffffff;
+  font-weight: 600; /* gras lisible */
   margin-bottom: var(--spacing-sm);
-  line-height: var(--line-height-relaxed);
+  line-height: 1.7;
 }
 
 /* Responsive */

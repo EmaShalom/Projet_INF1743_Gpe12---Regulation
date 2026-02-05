@@ -2,7 +2,7 @@
 
 .request-detail-page {
   min-height: 100vh;
-  background: var(--color-bg-secondary);
+  background: transparent;
   padding: var(--spacing-xl);
 }
 
