@@ -111,3 +111,127 @@
     width: 100%;
   }
 }
+/* ===== ICON LOGIN ===== */
+.login-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-link .icon {
+  font-size: 18px;
+}
+
+/* Icône dans cercle (style premium) */
+.icon-circle {
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Alignement utilisateur connecté */
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo-img {
+  width: 60px;   /* taille du logo */
+  height: 60px;
+  object-fit: contain;
+}
+/* =========================
+   USER DROPDOWN (vertical list)
+   ========================= */
+
+.navbar-user {
+  position: relative; /* pour ancrer le menu sous le bouton */
+}
+
+/* bouton utilisateur */
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  padding: 6px 10px;
+  border-radius: 10px;
+
+  color: #fff;
+}
+
+.user-trigger:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* chevron */
+.chevron {
+  font-size: 20px;
+  transition: transform 0.2s ease;
+  color: rgba(255,255,255,0.9);
+}
+
+.chevron.open {
+  transform: rotate(180deg);
+}
+
+/* menu déroulant -> LISTE */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+
+  min-width: 200px;
+  padding: 2px;
+
+  display: flex;           /* ✅ */
+  flex-direction: column;  /* ✅ VERTICAL */
+  gap: 0px;                /* ✅ espace entre items */
+
+  z-index: 9999;
+}
+
+/* items en ligne verticale */
+.dropdown-item {
+  width: %;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 5px 40px;
+  border-radius: 10px;
+
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+
+  font-size: 13px;
+  font-weight: 550;
+  color: #1f2a37;
+}
+
+.dropdown-item:hover {
+  background: #dfe1e5;
+}

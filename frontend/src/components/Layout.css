@@ -1,26 +1,70 @@
 /* =========================
-   Layout.css
+   Layout.css (FADE SLIDER)
    ========================= */
 
 .layout {
-  min-height: 90vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
 
-  /* ✅ FULL SCREEN BACKGROUND IMAGE (set from inline style in Layout.jsx) */
-  background-size: 100%;
+  /* IMPORTANT : ne plus gérer background-image ici (on utilise .bg-fade) */
+}
+
+/* =========================
+   Background fade (Apple-style)
+   4 images, 5s chacune => total 20s
+   ========================= */
+
+.bg-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.bg-fade div {
+  position: absolute;
+  inset: 0;
+
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
-  position: relative;
+  opacity: 0;
+  animation: fadeBg 20s infinite;
+  will-change: opacity;
 }
 
-/* ✅ Dark overlay over the full background image */
+/* Délais : 0s, 5s, 10s, 15s */
+.bg-fade div:nth-child(1) { animation-delay: 0s; }
+.bg-fade div:nth-child(2) { animation-delay: 5s; }
+.bg-fade div:nth-child(3) { animation-delay: 10s; }
+.bg-fade div:nth-child(4) { animation-delay: 15s; }
+
+/* Fade smooth */
+@keyframes fadeBg {
+  0%   { opacity: 0; }
+  6%   { opacity: 1; }   /* fade in */
+  26%  { opacity: 1; }   /* visible */
+  34%  { opacity: 0; }   /* fade out */
+  100% { opacity: 0; }
+}
+
+/* =========================
+   Overlay (lisibilité)
+   ========================= */
+
 .layout-bg-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(14, 27, 27, 0.45); /* adjust: 0.35 lighter, 0.55 darker */
-  z-index: 0;
+  z-index: 1;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.15) 0%,
+    rgba(0,0,0,0.35) 100%
+  );
 }
 
 /* Navbar + content + footers above overlay */
@@ -29,14 +73,13 @@
 .layout-footer-top,
 .layout-footer {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 /* Contenu */
 .layout-content {
   flex: 1;
   padding: var(--spacing-xlg);
-  
 }
 
 /* =========================
@@ -44,21 +87,20 @@
    ========================= */
 
 .layout-footer-top {
-  background: #3f4652; /* gris bleuté */
+  background: #3f4652;
   color: rgba(255, 255, 255, 0.98);
-
-  padding: 40px 18px; /* ✅ bigger footer top */
+  padding: 10px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .footer-top-inner {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .footer-top-brand {
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .footer-logo {
@@ -69,17 +111,17 @@
 }
 
 .footer-subtitle {
-  margin-top: 6px;
+  margin-top: 5px;
   font-size: 14px;
   opacity: 0.95;
 }
 
-/* ✅ Centered 2 columns (fix your gap: 600px) */
+/* ✅ FIX du gap énorme : spacing normal et centré */
 .footer-top-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 600px;               /* ✅ normal spacing */
-  justify-content: center; /* ✅ center the grid block */
+  gap: 48px;
+  justify-content: center;
   align-items: start;
 }
 
@@ -93,10 +135,8 @@
 .footer-col p {
   margin: 6px 0;
   font-size: 14px;
-
-  /* ✅ more visible text */
   color: #f5f7fa;
-  opacity: 1; /* ✅ was 0.7, now fully visible */
+  opacity: 1;
 }
 
 .footer-col strong {
@@ -108,8 +148,12 @@
   height: 12px;
 }
 
-/* ✅ Responsive: 2 columns -> 1 */
+/* Responsive: 2 cols -> 1 */
 @media (max-width: 780px) {
+  .layout-content {
+    padding: 18px;
+  }
+
   .footer-top-grid {
     grid-template-columns: 1fr;
     gap: 22px;

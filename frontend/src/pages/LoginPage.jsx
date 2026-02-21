@@ -10,6 +10,9 @@ const LoginPage = () => {
   
   // Message de succès depuis la page d'inscription
   const successMessage = location.state?.message
+
+  // ✅ Étapes: 1 = email, 2 = mot de passe
+  const [step, setStep] = useState(1)
   
   // ==================== ÉTAT ====================
   const [formData, setFormData] = useState({
@@ -54,9 +57,33 @@ const LoginPage = () => {
       setErrors(prev => ({ ...prev, login: '' }))
     }
   }
+
+  const goNext = () => {
+    // Valider email avant de passer à l'étape 2
+    if (!validateEmail(formData.email)) {
+      setErrors(prev => ({ ...prev, email: "Format d'email invalide" }))
+      return
+    }
+    setStep(2)
+  }
+
+  const goBack = () => {
+    if (step === 1) {
+      navigate('/') // Retour à la HomePage
+    } else {
+      setStep(1) // Retour à l'étape email
+      setErrors(prev => ({ ...prev, login: '' }))
+    }
+  }
   
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // ✅ Étape 1: ne pas soumettre, on passe à l'étape 2
+    if (step === 1) {
+      goNext()
+      return
+    }
     
     // Validation basique
     if (!validateEmail(formData.email) || formData.password.length < 8) {
@@ -145,73 +172,99 @@ const LoginPage = () => {
         
         <form onSubmit={handleSubmit} className="login-form">
           {/* Email */}
-          <div className="form-group">
-            <label htmlFor="email">
-              Adresse email <span className="required">*</span>
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={errors.email ? 'input-error' : ''}
-              placeholder="jean.dupont@uqo.ca"
-              required
-              autoComplete="email"
-            />
-            {errors.email && (
-              <span className="error-message">
-                ⚠️ {errors.email}
-              </span>
-            )}
-          </div>
+          {step === 1 && (
+            <div className="form-group">
+              <label htmlFor="email">
+                Adresse email <span className="required">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={errors.email ? 'input-error' : ''}
+                placeholder="jean.dupont@uqo.ca"
+                required
+                autoComplete="email"
+              />
+              {errors.email && (
+                <span className="error-message">
+                  ⚠️ {errors.email}
+                </span>
+              )}
+            </div>
+          )}
           
           {/* Mot de passe */}
-          <div className="form-group">
-            <label htmlFor="password">
-              Mot de passe <span className="required">*</span>
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={errors.password ? 'input-error' : ''}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-            {errors.password && (
-              <span className="error-message">
-                ⚠️ {errors.password}
-              </span>
-            )}
-          </div>
+          {step === 2 && (
+            <div className="form-group">
+              <label htmlFor="password">
+                Mot de passe <span className="required">*</span>
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={errors.password ? 'input-error' : ''}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+              />
+              {errors.password && (
+                <span className="error-message">
+                  ⚠️ {errors.password}
+                </span>
+              )}
+            </div>
+          )}
           
           {/* Erreur de connexion */}
-          {errors.login && (
+          {step === 2 && errors.login && (
             <div className="login-error">
               ❌ {errors.login}
             </div>
           )}
           
           {/* Bouton */}
-          <button 
-            type="submit" 
-            className="submit-button"
-            disabled={!isFormValid() || isLoading}
-          >
-            {isLoading ? (
-              <>
-                <span className="spinner"></span>
-                Connexion en cours...
-              </>
+          <div className="login-actions">
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={goBack}
+              disabled={isLoading}
+            >
+              Retour
+            </button>
+
+            {step === 1 ? (
+              <button
+                type="button"
+                className="primary-action"
+                onClick={goNext}
+                disabled={!validateEmail(formData.email) || !!errors.email}
+              >
+                Suivant
+              </button>
             ) : (
-              'Se connecter'
+              <button
+                type="submit"
+                className="primary-action"
+                disabled={!isFormValid() || isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Connexion en cours...
+                  </>
+                ) : (
+                  'Connexion'
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </form>
         
         {/* Identifiants de test (L1 uniquement) */}

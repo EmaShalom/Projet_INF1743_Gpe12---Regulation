@@ -14,6 +14,9 @@ const RegisterPage = () => {
     password: '',
     passwordConfirmation: ''
   })
+
+  // ✅ Étapes: 1 = nom complet, 2 = email, 3 = mot de passe
+  const [step, setStep] = useState(1)
   
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -66,10 +69,46 @@ const RegisterPage = () => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
     validateField(name, value)
+
+    // ✅ si on change password, on re-valide la confirmation
+    if (name === 'password' && formData.passwordConfirmation) {
+      validateField('passwordConfirmation', formData.passwordConfirmation)
+    }
+  }
+
+  const goNext = () => {
+    if (step === 1) {
+      validateField('fullName', formData.fullName)
+      if (!validateName(formData.fullName) || errors.fullName) return
+      setStep(2)
+      return
+    }
+
+    if (step === 2) {
+      validateField('email', formData.email)
+      if (!validateEmail(formData.email) || errors.email) return
+      setStep(3)
+    }
+  }
+
+  const goBack = () => {
+    if (step === 1) {
+      navigate('/') // Retour Home
+    } else if (step === 2) {
+      setStep(1) // Retour à Nom complet
+    } else {
+      setStep(2) // Retour à Email
+    }
   }
   
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // ✅ Étape 1 et 2: on ne soumet pas, on avance
+    if (step === 1 || step === 2) {
+      goNext()
+      return
+    }
     
     // Validation finale
     if (!isFormValid()) return
@@ -132,95 +171,103 @@ const RegisterPage = () => {
         
         <form onSubmit={handleSubmit} className="register-form">
           {/* Nom complet */}
-          <div className="form-group">
-            <label htmlFor="fullName">
-              Nom complet <span className="required">*</span>
-            </label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              className={errors.fullName ? 'input-error' : ''}
-              placeholder="Jean Dupont"
-              required
-            />
-            {errors.fullName && (
-              <span className="error-message">
-                ⚠️ {errors.fullName}
-              </span>
-            )}
-          </div>
+          {step === 1 && (
+            <div className="form-group">
+              <label htmlFor="fullName">
+                Nom complet <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                className={errors.fullName ? 'input-error' : ''}
+                placeholder="Jean Dupont"
+                required
+              />
+              {errors.fullName && (
+                <span className="error-message">
+                  ⚠️ {errors.fullName}
+                </span>
+              )}
+            </div>
+          )}
           
           {/* Email */}
-          <div className="form-group">
-            <label htmlFor="email">
-              Adresse email <span className="required">*</span>
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={errors.email ? 'input-error' : ''}
-              placeholder="jean.dupont@uqo.ca"
-              required
-            />
-            {errors.email && (
-              <span className="error-message">
-                ⚠️ {errors.email}
-              </span>
-            )}
-          </div>
+          {step === 2 && (
+            <div className="form-group">
+              <label htmlFor="email">
+                Adresse email <span className="required">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={errors.email ? 'input-error' : ''}
+                placeholder="jean.dupont@uqo.ca"
+                required
+              />
+              {errors.email && (
+                <span className="error-message">
+                  ⚠️ {errors.email}
+                </span>
+              )}
+            </div>
+          )}
           
           {/* Mot de passe */}
-          <div className="form-group">
-            <label htmlFor="password">
-              Mot de passe <span className="required">*</span>
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={errors.password ? 'input-error' : ''}
-              placeholder="••••••••"
-              required
-            />
-            {errors.password && (
-              <span className="error-message">
-                ⚠️ {errors.password}
-              </span>
-            )}
-            <span className="help-text">
-              Minimum 8 caractères, 1 majuscule, 1 chiffre
-            </span>
-          </div>
-          
-          {/* Confirmation */}
-          <div className="form-group">
-            <label htmlFor="passwordConfirmation">
-              Confirmer le mot de passe <span className="required">*</span>
-            </label>
-            <input
-              type="password"
-              id="passwordConfirmation"
-              name="passwordConfirmation"
-              value={formData.passwordConfirmation}
-              onChange={handleChange}
-              className={errors.passwordConfirmation ? 'input-error' : ''}
-              placeholder="••••••••"
-              required
-            />
-            {errors.passwordConfirmation && (
-              <span className="error-message">
-                ⚠️ {errors.passwordConfirmation}
-              </span>
-            )}
-          </div>
+          {step === 3 && (
+            <>
+              <div className="form-group">
+                <label htmlFor="password">
+                  Mot de passe <span className="required">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={errors.password ? 'input-error' : ''}
+                  placeholder="••••••••"
+                  required
+                />
+                {errors.password && (
+                  <span className="error-message">
+                    ⚠️ {errors.password}
+                  </span>
+                )}
+                <span className="help-text">
+                  Minimum 8 caractères, 1 majuscule, 1 chiffre
+                </span>
+              </div>
+              
+              {/* Confirmation */}
+              <div className="form-group">
+                <label htmlFor="passwordConfirmation">
+                  Confirmer le mot de passe <span className="required">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="passwordConfirmation"
+                  name="passwordConfirmation"
+                  value={formData.passwordConfirmation}
+                  onChange={handleChange}
+                  className={errors.passwordConfirmation ? 'input-error' : ''}
+                  placeholder="••••••••"
+                  required
+                />
+                {errors.passwordConfirmation && (
+                  <span className="error-message">
+                    ⚠️ {errors.passwordConfirmation}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
           
           {/* Erreur de soumission */}
           {errors.submit && (
@@ -230,20 +277,42 @@ const RegisterPage = () => {
           )}
           
           {/* Bouton */}
-          <button 
-            type="submit" 
-            className="submit-button"
-            disabled={!isFormValid() || isLoading}
-          >
-            {isLoading ? (
-              <>
-                <span className="spinner"></span>
-                Inscription en cours...
-              </>
+          <div className="register-actions">
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={goBack}
+              disabled={isLoading}
+            >
+              Retour
+            </button>
+
+            {step < 3 ? (
+              <button
+                type="button"
+                className="primary-action"
+                onClick={goNext}
+                disabled={isLoading}
+              >
+                Suivant
+              </button>
             ) : (
-              "S'inscrire"
+              <button 
+                type="submit" 
+                className="primary-action"
+                disabled={!isFormValid() || isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Inscription en cours...
+                  </>
+                ) : (
+                  "S'inscrire"
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </form>
         
         {/* Lien connexion */}

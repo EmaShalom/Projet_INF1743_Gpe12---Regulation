@@ -2,9 +2,10 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 
 // Pages
+import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
@@ -19,12 +20,13 @@ function App() {
       <AuthProvider>
         <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
+            {/* ✅ Page d'accueil publique */}
+            <Route path="/" element={<HomePage />} />
+
             {/* Routes publiques */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            
+
             {/* Routes protégées */}
             <Route
               path="/dashboard"
@@ -34,7 +36,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/requests/new"
               element={
@@ -43,7 +45,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/requests/:id"
               element={
@@ -52,24 +54,25 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
+            {/* 404 */}
             <Route
               path="*"
               element={
-                <div style={{ 
-                  minHeight: '60vh', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
+                <div style={{
+                  minHeight: '60vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   padding: '2rem'
                 }}>
                   <h1 style={{ fontSize: '4rem' }}>404</h1>
                   <h2>Page non trouvée</h2>
                   <p>La page que vous recherchez n'existe pas.</p>
-                  <a 
-                    href="/dashboard" 
-                    style={{ 
+                  <a
+                    href="/"
+                    style={{
                       marginTop: '2rem',
                       padding: '0.75rem 1.5rem',
                       background: 'var(--color-primary)',
@@ -78,7 +81,7 @@ function App() {
                       borderRadius: '8px'
                     }}
                   >
-                    Retour au tableau de bord
+                    Retour à l’accueil
                   </a>
                 </div>
               }
