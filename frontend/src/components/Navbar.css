@@ -214,7 +214,7 @@
 
 /* items en ligne verticale */
 .dropdown-item {
-  width: %;
+  width: auto;
   display: flex;
   align-items: center;
   gap: 8px;
