@@ -105,7 +105,7 @@
   /* ✅ overlay léger pour lire le texte sans cacher le slider */
   background:
     linear-gradient(
-      90deg,
+      100deg,
       rgba(245,247,251,0.90) 0%,
       rgba(245,247,251,0.80) 55%,
       rgba(245,247,251,0.60) 100%
@@ -133,8 +133,8 @@
 }
 
 .hero-card{
-  background: rgba(255,255,255,0.90);
-  border: 1px solid rgba(15, 85, 102, 0.14);
+  background: rgba(214, 189, 189, 0.9);
+  border: 1px solid rgba(48, 102, 116, 0.14);
   border-radius: var(--radius);
   padding: 26px;
   box-shadow: 0 18px 45px rgba(2, 24, 32, 0.10);
@@ -448,4 +448,24 @@
 @media (max-width: 520px){
   .features{ grid-template-columns: 1fr; }
   .brand-name{ font-size: 18px; }
+}
+.hero-user {
+  margin: 12px 0 18px;
+  color: var(--muted, #475569);
+  font-size: 0.95rem;
+}
+
+.hero-user-role {
+  margin-left: 6px;
+  opacity: 0.85;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.home-link-btn {
+  text-decoration: none;
 }

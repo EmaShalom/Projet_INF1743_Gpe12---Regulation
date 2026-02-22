@@ -1,23 +1,19 @@
 import { Link, useNavigate } from 'react-router-dom'
 import './HomePage.css'
 
+import Button from '../components/Button'
+import Card from '../components/Card'
+
 const HomePage = () => {
   const navigate = useNavigate()
 
-  // =========================
-  // AUTHENTIFICATION
-  // =========================
   const token = localStorage.getItem('token')
   const isAuthenticated = !!token
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
 
-  // =========================
-  // LOGOUT
-  // =========================
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-
-    // Retour à la Home NON connecté
     navigate('/')
   }
 
@@ -27,8 +23,7 @@ const HomePage = () => {
         <div className="hero-overlay" />
 
         <div className="hero-content">
-          <div className="hero-card">
-
+          <Card className="hero-card">
             <h1 className="hero-title">
               Gestion des requêtes
               <span className="hero-accent"> simplifiée</span>
@@ -39,50 +34,57 @@ const HomePage = () => {
               en toute simplicité, depuis un seul espace sécurisé.
             </p>
 
-            <div className="hero-actions">
+            {/* ✅ petit statut pro */}
+            {isAuthenticated && (
+              <div className="hero-user">
+                Connecté : <strong>{currentUser?.nom_complet || 'Utilisateur'}</strong>
+                {currentUser?.role && (
+                  <span className="hero-user-role">
+                    ({currentUser.role === 'gestionnaire' ? 'Gestionnaire' : 'Utilisateur'})
+                  </span>
+                )}
+              </div>
+            )}
 
-              {/* =========================
-                 BOUTON PRINCIPAL
-                 ========================= */}
-              <button
-                className="primary-btn"
+            <div className="hero-actions">
+              <Button
+                variant="primary"
+                size="large"
                 onClick={() => {
-                  // Si non connecté → login
-                  if (!isAuthenticated) {
-                    navigate('/login')
-                  } else {
-                    navigate('/requests/new')
-                  }
+                  if (!isAuthenticated) navigate('/login')
+                  else navigate('/requests/new')
                 }}
               >
                 Créer une requête
-              </button>
+              </Button>
 
-              {/* =========================
-                 UTILISATEUR NON CONNECTÉ
-                 ========================= */}
-              {!isAuthenticated && (
-                <Link to="/login" className="secondary-btn">
-                  Se connecter
+              {!isAuthenticated ? (
+                <Link to="/login" className="home-link-btn">
+                  <Button variant="secondary" size="large">
+                    Se connecter
+                  </Button>
                 </Link>
-              )}
+              ) : (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="large"
+                    onClick={() => navigate('/dashboard')}
+                  >
+                    Aller au dashboard
+                  </Button>
 
-              {/* =========================
-                 UTILISATEUR CONNECTÉ
-                 ========================= */}
-              {isAuthenticated && (
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  onClick={handleLogout}
-                >
-                  Se déconnecter
-                </button>
+                  <Button
+                    variant="danger"
+                    size="large"
+                    onClick={handleLogout}
+                  >
+                    Se déconnecter
+                  </Button>
+                </>
               )}
-
             </div>
-
-          </div>
+          </Card>
         </div>
       </section>
 
@@ -92,29 +94,24 @@ const HomePage = () => {
           <h2 className="section-title">Fonctionnalités</h2>
 
           <div className="features">
-            <div className="feature-card">
-              <h3>📌 Suivi des requêtes</h3>
+            <Card className="feature-card" title="📌 Suivi des requêtes">
               <p>Visualisez le statut de vos demandes en temps réel.</p>
-            </div>
+            </Card>
 
-            <div className="feature-card">
-              <h3>📊 Dashboard</h3>
+            <Card className="feature-card" title="📊 Dashboard">
               <p>Accédez aux statistiques et indicateurs clés.</p>
-            </div>
+            </Card>
 
-            <div className="feature-card">
-              <h3>🔔 Notifications</h3>
+            <Card className="feature-card" title="🔔 Notifications">
               <p>Recevez des alertes lors des changements de statut.</p>
-            </div>
+            </Card>
 
-            <div className="feature-card">
-              <h3>🧾 Historique</h3>
+            <Card className="feature-card" title="🧾 Historique">
               <p>Consultez toutes vos requêtes passées.</p>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
-
     </div>
   )
 }

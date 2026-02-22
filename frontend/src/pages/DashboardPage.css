@@ -2,7 +2,7 @@
 
 .dashboard-page {
   min-height: 100vh;
-  background: transparent);
+  background: transparent;
   padding: var(--spacing-xl);
 }
 
@@ -306,5 +306,118 @@
   .request-meta {
     flex-direction: column;
     gap: var(--spacing-xs);
+  }
+}
+.table-wrapper {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.table-title {
+  padding: var(--spacing-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.table thead th {
+  text-align: left;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table tbody td {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  border-bottom: var(--border-width-thin) solid rgba(0, 0, 0, 0.06);
+}
+
+.table tbody tr:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.row-clickable {
+  cursor: pointer;
+}
+
+/* Bouton dans TH (tri) */
+.th-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.th-active {
+  color: var(--color-primary);
+}
+
+/* =========================
+   BADGES (status)
+   ========================= */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+/* Submitted */
+.badge.submitted {
+  background: rgba(255, 193, 7, 0.22);
+  color: #b45309;
+}
+
+/* In Progress */
+.badge.in-progress {
+  background: rgba(23, 162, 184, 0.18);
+  color: #0c5460;
+}
+
+/* Resolved */
+.badge.resolved {
+  background: rgba(40, 167, 69, 0.18);
+  color: #155724;
+}
+
+/* Closed */
+.badge.closed {
+  background: rgba(108, 117, 125, 0.18);
+  color: #374151;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+  .table {
+    min-width: 720px;
   }
 }

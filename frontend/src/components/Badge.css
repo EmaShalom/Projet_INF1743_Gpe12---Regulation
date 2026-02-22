@@ -1,0 +1,21 @@
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.submitted {
+  background: #ffeeba;
+}
+
+.in-progress {
+  background: #bee5eb;
+}
+
+.resolved {
+  background: #c3e6cb;
+}
+
+.closed {
+  background: #d6d8db;
+}

@@ -1,116 +1,141 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+
 import { mockRequests, mockUsers } from '../mockData'
-import { STATUS_LABELS, STATUS_COLORS, REQUEST_STATUS } from '../utils/constants'
+import { STATUS_LABELS, REQUEST_STATUS } from '../utils/constants'
 import { formatRelativeDate } from '../utils/formatters'
+
+import Button from '../components/Button'
+import Input from '../components/Input'
+import Table from '../components/Table'
+import Badge from '../components/Badge'
+import Modal from '../components/Modal'
+
 import './DashboardPage.css'
 
 const DashboardPage = () => {
   const navigate = useNavigate()
-  
+
   // ==================== ÉTAT ====================
   const [requests, setRequests] = useState([])
-  const [filteredRequests, setFilteredRequests] = useState([])
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  
+
+  // Modal
+  const [selectedRequest, setSelectedRequest] = useState(null)
+
   // Récupérer l'utilisateur connecté
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   const isManager = currentUser.role === 'gestionnaire'
-  
+
   // ==================== CHARGEMENT DES DONNÉES ====================
   useEffect(() => {
     const loadRequests = async () => {
       setIsLoading(true)
-      
       try {
-        // L1 : Simuler un délai de chargement
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // Filtrer selon le rôle
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
         let userRequests
         if (isManager) {
-          // Gestionnaire voit TOUTES les demandes
           userRequests = mockRequests
         } else {
-          // Utilisateur voit SEULEMENT ses demandes
-          userRequests = mockRequests.filter(
-            req => req.createur_id === currentUser.id
-          )
+          userRequests = mockRequests.filter((req) => req.createur_id === currentUser.id)
         }
-        
-        // Trier par date (plus récentes en premier)
-        userRequests.sort((a, b) => 
-          new Date(b.date_creation) - new Date(a.date_creation)
-        )
-        
+
+        userRequests.sort((a, b) => new Date(b.date_creation) - new Date(a.date_creation))
         setRequests(userRequests)
-        setFilteredRequests(userRequests)
-        
-        // TODO L2 : Appeler l'API
-        // const response = await fetch('/api/requests/', {
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-        //   }
-        // })
-        // const data = await response.json()
-        // setRequests(data)
-        
       } catch (error) {
         console.error('Erreur chargement demandes:', error)
       } finally {
         setIsLoading(false)
       }
     }
-    
+
     loadRequests()
   }, [currentUser.id, isManager])
-  
-  // ==================== FILTRAGE ====================
-  useEffect(() => {
-    let filtered = [...requests]
-    
-    // Filtre par statut
-    if (filterStatus !== 'ALL') {
-      filtered = filtered.filter(req => req.statut === filterStatus)
-    }
-    
-    // Filtre par recherche
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(req =>
-        req.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        req.description.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-    
-    setFilteredRequests(filtered)
-  }, [requests, filterStatus, searchQuery])
-  
-  // ==================== GESTIONNAIRES ====================
-  const handleRequestClick = (requestId) => {
-    navigate(`/requests/${requestId}`)
-  }
-  
-  const handleNewRequest = () => {
-    navigate('/requests/new')
-  }
-  
+
+  // ==================== HELPERS ====================
+  const handleNewRequest = () => navigate('/requests/new')
+
   const getCreatorName = (creatorId) => {
-    const user = mockUsers.find(u => u.id === creatorId)
+    const user = mockUsers.find((u) => u.id === creatorId)
     return user ? user.nom_complet : 'Utilisateur inconnu'
   }
-  
-  const getStatusBadgeClass = (status) => {
-    const statusClasses = {
-      [REQUEST_STATUS.SUBMITTED]: 'status-submitted',
-      [REQUEST_STATUS.IN_PROGRESS]: 'status-in-progress',
-      [REQUEST_STATUS.RESOLVED]: 'status-resolved',
-      [REQUEST_STATUS.CLOSED]: 'status-closed'
+
+  const statusToBadgeClass = (status) => {
+    // Badge.css : submitted / in-progress / resolved / closed
+    const map = {
+      [REQUEST_STATUS.SUBMITTED]: 'submitted',
+      [REQUEST_STATUS.IN_PROGRESS]: 'in-progress',
+      [REQUEST_STATUS.RESOLVED]: 'resolved',
+      [REQUEST_STATUS.CLOSED]: 'closed'
     }
-    return statusClasses[status] || 'status-default'
+    return map[status] || 'submitted'
   }
-  
+
+  // ==================== FILTRAGE (memo) ====================
+  const filteredRequests = useMemo(() => {
+    let filtered = [...requests]
+
+    if (filterStatus !== 'ALL') {
+      filtered = filtered.filter((req) => req.statut === filterStatus)
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        (req) =>
+          req.titre.toLowerCase().includes(q) ||
+          req.description.toLowerCase().includes(q)
+      )
+    }
+
+    return filtered
+  }, [requests, filterStatus, searchQuery])
+
+  // Compteurs
+  const counts = useMemo(() => {
+    const total = requests.length
+    const submitted = requests.filter((r) => r.statut === REQUEST_STATUS.SUBMITTED).length
+    const inProgress = requests.filter((r) => r.statut === REQUEST_STATUS.IN_PROGRESS).length
+    const resolved = requests.filter((r) => r.statut === REQUEST_STATUS.RESOLVED).length
+    const closed = requests.filter((r) => r.statut === REQUEST_STATUS.CLOSED).length
+    return { total, submitted, inProgress, resolved, closed }
+  }, [requests])
+
+  // ==================== TABLE COLUMNS ====================
+  const columns = useMemo(() => {
+    const base = [
+      { key: 'titre', label: 'Titre' },
+      { key: 'type', label: 'Catégorie' },
+      {
+        key: 'statut',
+        label: 'Statut',
+        render: (row) => (
+          <Badge status={statusToBadgeClass(row.statut)}>
+            {STATUS_LABELS[row.statut]}
+          </Badge>
+        )
+      },
+      {
+        key: 'date_creation',
+        label: 'Date',
+        render: (row) => formatRelativeDate(row.date_creation)
+      }
+    ]
+
+    if (isManager) {
+      base.splice(2, 0, {
+        key: 'createur_id',
+        label: 'Créé par',
+        render: (row) => getCreatorName(row.createur_id)
+      })
+    }
+
+    return base
+  }, [isManager])
+
   // ==================== RENDU ====================
   if (isLoading) {
     return (
@@ -122,141 +147,157 @@ const DashboardPage = () => {
       </div>
     )
   }
-  
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-container">
         {/* En-tête */}
         <div className="dashboard-header">
           <div className="header-content">
-            <h1>
-              {isManager ? '📊 Toutes les Demandes' : '📋 Mes Demandes'}
-            </h1>
+            <h1>{isManager ? '📊 Toutes les Demandes' : '📋 Mes Demandes'}</h1>
             <p>
-              {isManager 
+              {isManager
                 ? `Gestion de ${requests.length} demande(s) au total`
-                : `Vous avez ${requests.length} demande(s)`
-              }
+                : `Vous avez ${requests.length} demande(s)`}
             </p>
           </div>
-          <button 
-            className="btn-new-request"
-            onClick={handleNewRequest}
-          >
+
+          <Button variant="primary" size="medium" onClick={handleNewRequest}>
             ➕ Nouvelle demande
-          </button>
+          </Button>
         </div>
-        
+
         {/* Filtres et recherche */}
         <div className="dashboard-controls">
-          {/* Filtres par statut */}
           <div className="filter-group">
             <label>Filtrer par statut :</label>
             <div className="filter-buttons">
-              <button
-                className={`filter-btn ${filterStatus === 'ALL' ? 'active' : ''}`}
+              <Button
+                variant={filterStatus === 'ALL' ? 'primary' : 'secondary'}
+                size="small"
                 onClick={() => setFilterStatus('ALL')}
               >
-                Tous ({requests.length})
-              </button>
-              <button
-                className={`filter-btn ${filterStatus === REQUEST_STATUS.SUBMITTED ? 'active' : ''}`}
+                Tous ({counts.total})
+              </Button>
+
+              <Button
+                variant={filterStatus === REQUEST_STATUS.SUBMITTED ? 'primary' : 'secondary'}
+                size="small"
                 onClick={() => setFilterStatus(REQUEST_STATUS.SUBMITTED)}
               >
-                Soumis ({requests.filter(r => r.statut === REQUEST_STATUS.SUBMITTED).length})
-              </button>
-              <button
-                className={`filter-btn ${filterStatus === REQUEST_STATUS.IN_PROGRESS ? 'active' : ''}`}
+                Soumis ({counts.submitted})
+              </Button>
+
+              <Button
+                variant={filterStatus === REQUEST_STATUS.IN_PROGRESS ? 'primary' : 'secondary'}
+                size="small"
                 onClick={() => setFilterStatus(REQUEST_STATUS.IN_PROGRESS)}
               >
-                En cours ({requests.filter(r => r.statut === REQUEST_STATUS.IN_PROGRESS).length})
-              </button>
-              <button
-                className={`filter-btn ${filterStatus === REQUEST_STATUS.RESOLVED ? 'active' : ''}`}
+                En cours ({counts.inProgress})
+              </Button>
+
+              <Button
+                variant={filterStatus === REQUEST_STATUS.RESOLVED ? 'primary' : 'secondary'}
+                size="small"
                 onClick={() => setFilterStatus(REQUEST_STATUS.RESOLVED)}
               >
-                Résolu ({requests.filter(r => r.statut === REQUEST_STATUS.RESOLVED).length})
-              </button>
-              <button
-                className={`filter-btn ${filterStatus === REQUEST_STATUS.CLOSED ? 'active' : ''}`}
+                Résolu ({counts.resolved})
+              </Button>
+
+              <Button
+                variant={filterStatus === REQUEST_STATUS.CLOSED ? 'primary' : 'secondary'}
+                size="small"
                 onClick={() => setFilterStatus(REQUEST_STATUS.CLOSED)}
               >
-                Fermé ({requests.filter(r => r.statut === REQUEST_STATUS.CLOSED).length})
-              </button>
+                Fermé ({counts.closed})
+              </Button>
             </div>
           </div>
-          
-          {/* Recherche */}
+
           <div className="search-group">
-            <label htmlFor="search">Rechercher :</label>
-            <input
-              type="text"
-              id="search"
-              className="search-input"
-              placeholder="Rechercher dans les titres..."
+            <Input
+              label="Rechercher :"
+              name="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher dans les titres ou descriptions..."
             />
           </div>
         </div>
-        
-        {/* Liste des demandes */}
-        <div className="requests-list">
-          {filteredRequests.length === 0 ? (
-            <div className="empty-state">
-              <p className="empty-icon">📭</p>
-              <h3>Aucune demande trouvée</h3>
-              <p>
-                {searchQuery || filterStatus !== 'ALL'
-                  ? 'Essayez de modifier vos filtres ou votre recherche.'
-                  : 'Créez votre première demande pour commencer !'
-                }
-              </p>
-              {!searchQuery && filterStatus === 'ALL' && (
-                <button 
-                  className="btn-primary"
-                  onClick={handleNewRequest}
-                >
-                  Créer ma première demande
-                </button>
-              )}
-            </div>
-          ) : (
-            filteredRequests.map(request => (
-              <div
-                key={request.id}
-                className="request-card"
-                onClick={() => handleRequestClick(request.id)}
-              >
-                <div className="request-header">
-                  <h3 className="request-title">{request.titre}</h3>
-                  <span className={`status-badge ${getStatusBadgeClass(request.statut)}`}>
-                    {STATUS_LABELS[request.statut]}
-                  </span>
+
+        {/* TABLE */}
+        {filteredRequests.length === 0 ? (
+          <div className="empty-state">
+            <p className="empty-icon">📭</p>
+            <h3>Aucune demande trouvée</h3>
+            <p>
+              {searchQuery || filterStatus !== 'ALL'
+                ? 'Essayez de modifier vos filtres ou votre recherche.'
+                : 'Créez votre première demande pour commencer !'}
+            </p>
+            {!searchQuery && filterStatus === 'ALL' && (
+              <Button variant="primary" onClick={handleNewRequest}>
+                Créer ma première demande
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            data={filteredRequests}
+            onRowClick={(row) => setSelectedRequest(row)} // ouvre le modal
+          />
+        )}
+
+        {/* MODAL DÉTAIL */}
+        <Modal
+          isOpen={!!selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          title={selectedRequest ? `Détails - ${selectedRequest.titre}` : 'Détails'}
+        >
+          {selectedRequest && (
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div>
+                <b>Titre :</b> {selectedRequest.titre}
+              </div>
+              <div>
+                <b>Catégorie :</b> {selectedRequest.type}
+              </div>
+              <div>
+                <b>Statut :</b>{' '}
+                <Badge status={statusToBadgeClass(selectedRequest.statut)}>
+                  {STATUS_LABELS[selectedRequest.statut]}
+                </Badge>
+              </div>
+              {isManager && (
+                <div>
+                  <b>Créé par :</b> {getCreatorName(selectedRequest.createur_id)}
                 </div>
-                
-                <p className="request-description">
-                  {request.description.substring(0, 150)}
-                  {request.description.length > 150 && '...'}
-                </p>
-                
-                <div className="request-meta">
-                  <span className="meta-item">
-                    🏷️ {request.type}
-                  </span>
-                  {isManager && (
-                    <span className="meta-item">
-                      👤 {getCreatorName(request.createur_id)}
-                    </span>
-                  )}
-                  <span className="meta-item">
-                    📅 {formatRelativeDate(request.date_creation)}
-                  </span>
+              )}
+              <div>
+                <b>Date :</b> {formatRelativeDate(selectedRequest.date_creation)}
+              </div>
+              <div>
+                <b>Description :</b>
+                <div style={{ marginTop: 6, color: '#475569' }}>
+                  {selectedRequest.description}
                 </div>
               </div>
-            ))
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+                <Button variant="secondary" onClick={() => setSelectedRequest(null)}>
+                  Fermer
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate(`/requests/${selectedRequest.id}`)}
+                >
+                  Ouvrir la page
+                </Button>
+              </div>
+            </div>
           )}
-        </div>
+        </Modal>
       </div>
     </div>
   )

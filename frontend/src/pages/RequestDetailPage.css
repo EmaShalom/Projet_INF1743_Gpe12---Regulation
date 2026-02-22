@@ -208,7 +208,7 @@
   color: #f57c00;
 }
 
-.status-inline.status-in_progress {
+.status-inline.status-in-progress {
   background: rgba(23, 162, 184, 0.2);
   color: #0c5460;
 }
@@ -450,5 +450,51 @@
   
   .btn-submit-comment {
     width: 100%;
+  }
+}
+/* Card du Design System : évite double fond blanc si tu gardes section-card/request-info-card */
+.section-card.card,
+.request-info-card.card {
+  background: white;
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--border-radius-lg);
+}
+
+/* Titre de Card (si ton Card affiche <h3 class="card-title">) */
+.card-title {
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--color-border-light);
+  padding-bottom: var(--spacing-md);
+}
+
+/* Contenu de Card */
+.card-content {
+  padding: 0; /* si ton Card met déjà du padding, enlève cette ligne */
+}
+
+/* Badge DS (si tu utilises <Badge className="badge submitted"> etc.) */
+.badge {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Boutons DS dans le header + formulaire commentaire */
+.request-header .btn,
+.comment-form-footer .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .request-header .btn {
+    width: 100%;
+  }
+
+  .comment-form-footer .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
