@@ -12,8 +12,10 @@ const Layout = ({ children }) => {
   const location = useLocation()
 
   // Pages où on cache navbar + footer
-  const hiddenRoutes = ['/login', '/register']
-  const hideLayout = hiddenRoutes.includes(location.pathname)
+  const hiddenRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
+  const hideLayout =
+  hiddenRoutes.includes(location.pathname) ||
+  location.pathname.startsWith('/reset-password')
 
   return (
     <div className="layout">

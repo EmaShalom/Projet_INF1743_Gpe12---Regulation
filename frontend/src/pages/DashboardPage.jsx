@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { mockRequests, mockUsers } from '../mockData'
+import api from '../services/api'
 import { STATUS_LABELS, REQUEST_STATUS } from '../utils/constants'
 import { formatRelativeDate } from '../utils/formatters'
 
@@ -16,55 +16,44 @@ import './DashboardPage.css'
 const DashboardPage = () => {
   const navigate = useNavigate()
 
-  // ==================== ÉTAT ====================
   const [requests, setRequests] = useState([])
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-
-  // Modal
+  const [errorMessage, setErrorMessage] = useState('')
   const [selectedRequest, setSelectedRequest] = useState(null)
 
-  // Récupérer l'utilisateur connecté
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   const isManager = currentUser.role === 'gestionnaire'
 
-  // ==================== CHARGEMENT DES DONNÉES ====================
   useEffect(() => {
     const loadRequests = async () => {
       setIsLoading(true)
+      setErrorMessage('')
+
       try {
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        const res = await api.get('/requests')
+        const data = res.data?.requests || []
 
-        let userRequests
-        if (isManager) {
-          userRequests = mockRequests
-        } else {
-          userRequests = mockRequests.filter((req) => req.createur_id === currentUser.id)
-        }
-
-        userRequests.sort((a, b) => new Date(b.date_creation) - new Date(a.date_creation))
-        setRequests(userRequests)
+        setRequests(data)
       } catch (error) {
         console.error('Erreur chargement demandes:', error)
+        setErrorMessage("Impossible de charger les demandes pour le moment.")
       } finally {
         setIsLoading(false)
       }
     }
 
     loadRequests()
-  }, [currentUser.id, isManager])
+  }, [])
 
-  // ==================== HELPERS ====================
   const handleNewRequest = () => navigate('/requests/new')
 
-  const getCreatorName = (creatorId) => {
-    const user = mockUsers.find((u) => u.id === creatorId)
-    return user ? user.nom_complet : 'Utilisateur inconnu'
+  const getCreatorName = (row) => {
+    return row.createur?.nom_complet || 'Utilisateur inconnu'
   }
 
   const statusToBadgeClass = (status) => {
-    // Badge.css : submitted / in-progress / resolved / closed
     const map = {
       [REQUEST_STATUS.SUBMITTED]: 'submitted',
       [REQUEST_STATUS.IN_PROGRESS]: 'in-progress',
@@ -74,7 +63,6 @@ const DashboardPage = () => {
     return map[status] || 'submitted'
   }
 
-  // ==================== FILTRAGE (memo) ====================
   const filteredRequests = useMemo(() => {
     let filtered = [...requests]
 
@@ -86,15 +74,14 @@ const DashboardPage = () => {
       const q = searchQuery.toLowerCase()
       filtered = filtered.filter(
         (req) =>
-          req.titre.toLowerCase().includes(q) ||
-          req.description.toLowerCase().includes(q)
+          req.titre?.toLowerCase().includes(q) ||
+          req.description?.toLowerCase().includes(q)
       )
     }
 
     return filtered
   }, [requests, filterStatus, searchQuery])
 
-  // Compteurs
   const counts = useMemo(() => {
     const total = requests.length
     const submitted = requests.filter((r) => r.statut === REQUEST_STATUS.SUBMITTED).length
@@ -104,7 +91,6 @@ const DashboardPage = () => {
     return { total, submitted, inProgress, resolved, closed }
   }, [requests])
 
-  // ==================== TABLE COLUMNS ====================
   const columns = useMemo(() => {
     const base = [
       { key: 'titre', label: 'Titre' },
@@ -114,7 +100,7 @@ const DashboardPage = () => {
         label: 'Statut',
         render: (row) => (
           <Badge status={statusToBadgeClass(row.statut)}>
-            {STATUS_LABELS[row.statut]}
+            {STATUS_LABELS[row.statut] || row.statut}
           </Badge>
         )
       },
@@ -127,16 +113,15 @@ const DashboardPage = () => {
 
     if (isManager) {
       base.splice(2, 0, {
-        key: 'createur_id',
+        key: 'createur',
         label: 'Créé par',
-        render: (row) => getCreatorName(row.createur_id)
+        render: (row) => getCreatorName(row)
       })
     }
 
     return base
   }, [isManager])
 
-  // ==================== RENDU ====================
   if (isLoading) {
     return (
       <div className="dashboard-page">
@@ -151,7 +136,6 @@ const DashboardPage = () => {
   return (
     <div className="dashboard-page">
       <div className="dashboard-container">
-        {/* En-tête */}
         <div className="dashboard-header">
           <div className="header-content">
             <h1>{isManager ? '📊 Toutes les Demandes' : '📋 Mes Demandes'}</h1>
@@ -167,7 +151,6 @@ const DashboardPage = () => {
           </Button>
         </div>
 
-        {/* Filtres et recherche */}
         <div className="dashboard-controls">
           <div className="filter-group">
             <label>Filtrer par statut :</label>
@@ -225,7 +208,12 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* TABLE */}
+        {errorMessage && (
+          <div className="login-error" style={{ marginBottom: '16px' }}>
+            ❌ {errorMessage}
+          </div>
+        )}
+
         {filteredRequests.length === 0 ? (
           <div className="empty-state">
             <p className="empty-icon">📭</p>
@@ -245,11 +233,10 @@ const DashboardPage = () => {
           <Table
             columns={columns}
             data={filteredRequests}
-            onRowClick={(row) => setSelectedRequest(row)} // ouvre le modal
+            onRowClick={(row) => setSelectedRequest(row)}
           />
         )}
 
-        {/* MODAL DÉTAIL */}
         <Modal
           isOpen={!!selectedRequest}
           onClose={() => setSelectedRequest(null)}
@@ -266,12 +253,12 @@ const DashboardPage = () => {
               <div>
                 <b>Statut :</b>{' '}
                 <Badge status={statusToBadgeClass(selectedRequest.statut)}>
-                  {STATUS_LABELS[selectedRequest.statut]}
+                  {STATUS_LABELS[selectedRequest.statut] || selectedRequest.statut}
                 </Badge>
               </div>
               {isManager && (
                 <div>
-                  <b>Créé par :</b> {getCreatorName(selectedRequest.createur_id)}
+                  <b>Créé par :</b> {getCreatorName(selectedRequest)}
                 </div>
               )}
               <div>

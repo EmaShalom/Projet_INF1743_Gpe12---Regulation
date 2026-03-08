@@ -11,27 +11,22 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
 
-  // ==================== AUTH ====================
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const isAuthenticated = !!token
 
-  // ==================== ROUTES ====================
-  // 👉 Dropdown seulement pour dashboard + requests
   const isDashboardPage =
     location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/requests') ||
-    location.pathname === '/' && isAuthenticated
+    location.pathname.startsWith('/notifications') ||
+    (location.pathname === '/' && isAuthenticated)
 
-  // ==================== LOGOUT ====================
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/')
   }
 
-  // ==================== CLICK OUTSIDE ====================
-  // 👉 Fermer le dropdown si clic à l'extérieur
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -46,17 +41,12 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        
-        {/* ==================== LOGO ==================== */}
         <Link to={isAuthenticated ? "/dashboard" : "/"} className="navbar-logo">
           <img src={logo} alt="UQO Requests" className="logo-img" />
         </Link>
 
-        {/* ==================== MENU ==================== */}
         <div className="navbar-menu">
-
           {isAuthenticated ? (
-            // ==================== MENU UTILISATEUR CONNECTÉ ====================
             <>
               <Link to="/dashboard" className="navbar-link">
                 📊 Tableau de bord
@@ -66,11 +56,12 @@ const Navbar = () => {
                 ➕ Nouvelle demande
               </Link>
 
-              {/* ==================== USER DROPDOWN ==================== */}
+              <Link to="/notifications" className="navbar-link">
+                🔔 Notifications
+              </Link>
+
               {isDashboardPage ? (
                 <div className="navbar-user" ref={dropdownRef}>
-
-                  {/* Bouton utilisateur */}
                   <button
                     className="user-trigger"
                     onClick={() => setIsOpen(prev => !prev)}
@@ -88,11 +79,8 @@ const Navbar = () => {
                     </span>
                   </button>
 
-                  {/* Dropdown menu */}
                   {isOpen && (
                     <div className="dropdown-menu">
-                      
-                      {/* Accueil */}
                       <button
                         className="dropdown-item"
                         onClick={() => {
@@ -103,7 +91,16 @@ const Navbar = () => {
                         Accueil
                       </button>
 
-                      {/* Déconnexion */}
+                      <button
+                        className="dropdown-item"
+                        onClick={() => {
+                          navigate('/notifications')
+                          setIsOpen(false)
+                        }}
+                      >
+                        Notifications
+                      </button>
+
                       <button
                         className="dropdown-item"
                         onClick={() => {
@@ -113,12 +110,10 @@ const Navbar = () => {
                       >
                         Se déconnecter
                       </button>
-
                     </div>
                   )}
                 </div>
               ) : (
-                // 👉 Version simple (sans dropdown)
                 <div className="navbar-user">
                   <div className="icon-circle">
                     <FaUserCircle />
@@ -130,7 +125,6 @@ const Navbar = () => {
               )}
             </>
           ) : (
-            // ==================== MENU UTILISATEUR NON CONNECTÉ ====================
             <>
               <Link to="/login" className="navbar-link login-link">
                 <div className="icon-circle">
@@ -144,7 +138,6 @@ const Navbar = () => {
               </Link>
             </>
           )}
-
         </div>
       </div>
     </nav>

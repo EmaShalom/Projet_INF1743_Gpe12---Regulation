@@ -5,12 +5,17 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { Routes, Route } from 'react-router-dom'
 
 // Pages
+import TestPage from "./pages/TestPage"
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import RequestDetailPage from './pages/RequestDetailPage'
 import CreateRequestPage from './pages/CreateRequestPage'
+import EditRequestPage from './pages/EditRequestPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 import './App.css'
 
@@ -20,14 +25,14 @@ function App() {
       <AuthProvider>
         <Layout>
           <Routes>
-            {/* ✅ Page d'accueil publique */}
+            <Route path="/test" element={<TestPage />} />
             <Route path="/" element={<HomePage />} />
 
-            {/* Routes publiques */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* Routes protégées */}
             <Route
               path="/dashboard"
               element={
@@ -55,7 +60,23 @@ function App() {
               }
             />
 
-            {/* 404 */}
+            <Route
+              path="/requests/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditRequestPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="*"
               element={

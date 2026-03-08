@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { REQUEST_TYPES, CHAR_LIMITS } from '../utils/constants'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link, useParams } from 'react-router-dom'
+import { REQUEST_TYPES, CHAR_LIMITS, REQUEST_STATUS } from '../utils/constants'
 import { validateTitle, validateDescription } from '../utils/validators'
 import api from '../services/api'
 
@@ -11,8 +11,9 @@ import Button from '../components/Button'
 
 import './CreateRequestPage.css'
 
-const CreateRequestPage = () => {
+const EditRequestPage = () => {
   const navigate = useNavigate()
+  const { id } = useParams()
 
   const [formData, setFormData] = useState({
     titre: '',
@@ -20,8 +21,12 @@ const CreateRequestPage = () => {
     type: ''
   })
 
+  const [request, setRequest] = useState(null)
   const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
 
   const validateField = (name, value) => {
     let error = ''
@@ -77,9 +82,59 @@ const CreateRequestPage = () => {
       validateTitle(formData.titre) &&
       validateDescription(formData.description) &&
       !!formData.type &&
-      Object.values(errors).every((err) => !err)
+      !errors.titre &&
+      !errors.description &&
+      !errors.type
     )
   }
+
+  useEffect(() => {
+    const loadRequest = async () => {
+      setIsLoading(true)
+      setErrors({})
+
+      try {
+        const res = await api.get(`/requests/${id}`)
+        const requestData = res.data?.request
+
+        if (!requestData) {
+          setErrors({ submit: 'Demande introuvable.' })
+          return
+        }
+
+        const isOwner = requestData.createur_id === currentUser.id
+        const canEdit = isOwner && requestData.statut === REQUEST_STATUS.SUBMITTED
+
+        if (!canEdit) {
+          setErrors({
+            submit: 'Modification impossible. Seules vos demandes au statut SUBMITTED peuvent être modifiées.'
+          })
+          return
+        }
+
+        setRequest(requestData)
+        setFormData({
+          titre: requestData.titre || '',
+          description: requestData.description || '',
+          type: requestData.type || ''
+        })
+      } catch (error) {
+        console.error('Erreur chargement demande:', error)
+
+        if (error.response?.status === 403) {
+          setErrors({ submit: "Vous n'avez pas accès à cette demande." })
+        } else if (error.response?.status === 404) {
+          setErrors({ submit: 'Demande introuvable.' })
+        } else {
+          setErrors({ submit: 'Une erreur est survenue lors du chargement.' })
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadRequest()
+  }, [id, currentUser.id])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -89,37 +144,37 @@ const CreateRequestPage = () => {
     setErrors((prev) => ({ ...prev, submit: '' }))
 
     try {
-      await api.post('/requests', {
+      await api.put(`/requests/${id}`, {
         titre: formData.titre,
         description: formData.description,
         type: formData.type
       })
 
-      navigate('/dashboard', {
-        state: { message: 'Votre demande a été créée avec succès !' }
+      navigate(`/requests/${id}`, {
+        state: { message: 'La demande a été modifiée avec succès.' }
       })
     } catch (error) {
-      console.error('Erreur création demande:', error)
+      console.error('Erreur modification demande:', error)
 
       const data = error.response?.data
 
       if (error.response?.status === 400 && data?.erreurs) {
         setErrors((prev) => ({
           ...prev,
-          titre: data.erreurs.titre?.[0] || prev.titre || '',
-          description: data.erreurs.description?.[0] || prev.description || '',
-          type: data.erreurs.type?.[0] || prev.type || '',
+          titre: data.erreurs.titre?.[0] || '',
+          description: data.erreurs.description?.[0] || '',
+          type: data.erreurs.type?.[0] || '',
           submit: ''
         }))
-      } else if (error.response?.status === 401) {
+      } else if (error.response?.status === 403) {
         setErrors((prev) => ({
           ...prev,
-          submit: 'Votre session a expiré. Veuillez vous reconnecter.'
+          submit: data?.error || 'Modification non autorisée.'
         }))
       } else {
         setErrors((prev) => ({
           ...prev,
-          submit: data?.error || 'Une erreur est survenue lors de la création de la demande'
+          submit: data?.error || 'Une erreur est survenue lors de la modification.'
         }))
       }
     } finally {
@@ -135,21 +190,36 @@ const CreateRequestPage = () => {
     }))
   ]
 
+  if (isLoading) {
+    return (
+      <div className="create-request-page">
+        <div className="create-request-container">
+          <div className="loading-container">
+            <div className="spinner-large"></div>
+            <p>Chargement de la demande...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="create-request-page">
       <div className="create-request-container">
         <nav className="breadcrumb">
           <Link to="/dashboard">Tableau de bord</Link>
           <span className="separator">›</span>
-          <span>Nouvelle demande</span>
+          <Link to={`/requests/${id}`}>Demande #{id}</Link>
+          <span className="separator">›</span>
+          <span>Modifier</span>
         </nav>
 
         <div className="page-header">
-          <h1>Créer une nouvelle demande</h1>
-          <p>Remplissez le formulaire ci-dessous pour soumettre votre demande</p>
+          <h1>Modifier la demande</h1>
+          <p>Mettez à jour les informations de votre demande</p>
         </div>
 
-        <Card className="create-request-card" title="📝 Formulaire de demande">
+        <Card className="create-request-card" title="✏️ Modifier la demande">
           <form onSubmit={handleSubmit} className="create-request-form">
             <div className="form-group">
               <Input
@@ -216,7 +286,7 @@ const CreateRequestPage = () => {
                 variant="secondary"
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(`/requests/${id}`)}
               >
                 Annuler
               </Button>
@@ -225,26 +295,16 @@ const CreateRequestPage = () => {
                 variant="primary"
                 type="submit"
                 loading={isSubmitting}
-                disabled={!isFormValid() || isSubmitting}
+                disabled={!isFormValid() || isSubmitting || !request}
               >
-                Créer la demande
+                Enregistrer les modifications
               </Button>
             </div>
           </form>
-        </Card>
-
-        <Card className="help-card" title="💡 Conseils pour une bonne demande">
-          <ul>
-            <li>Choisissez un titre clair et descriptif</li>
-            <li>Sélectionnez le type de demande approprié</li>
-            <li>Décrivez le problème en détail avec les étapes pour le reproduire</li>
-            <li>Mentionnez le navigateur/système utilisé si pertinent</li>
-            <li>Ajoutez des captures d'écran si nécessaire (commentaires après création)</li>
-          </ul>
         </Card>
       </div>
     </div>
   )
 }
 
-export default CreateRequestPage
+export default EditRequestPage

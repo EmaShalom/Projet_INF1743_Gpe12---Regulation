@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { validateEmail } from '../utils/validators'
-import { authenticateUser } from '../mockData'
+import api from '../services/api'
 import './LoginPage.css'
 
 import Card from '../components/Card'
@@ -14,7 +14,6 @@ const LoginPage = () => {
 
   const successMessage = location.state?.message
 
-  // ✅ Étapes: 1 = email, 2 = mot de passe
   const [step, setStep] = useState(1)
 
   const [formData, setFormData] = useState({
@@ -24,11 +23,8 @@ const LoginPage = () => {
 
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-
-  // BONUS UX
   const [showPassword, setShowPassword] = useState(false)
 
-  // ==================== VALIDATION ====================
   const validateField = (name, value) => {
     let error = ''
 
@@ -45,27 +41,34 @@ const LoginPage = () => {
     setErrors((prev) => ({ ...prev, [name]: error }))
   }
 
-  // ==================== HANDLERS ====================
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
     validateField(name, value)
 
-    // Effacer l'erreur de connexion si l'utilisateur retape
-    if (errors.login) setErrors((prev) => ({ ...prev, login: '' }))
+    if (errors.login) {
+      setErrors((prev) => ({ ...prev, login: '' }))
+    }
   }
 
   const goNext = () => {
+    if (!formData.email.trim()) {
+      setErrors((prev) => ({ ...prev, email: "L'adresse email est requise" }))
+      return
+    }
+
     if (!validateEmail(formData.email)) {
       setErrors((prev) => ({ ...prev, email: "Format d'email invalide" }))
       return
     }
+
     setStep(2)
   }
 
   const goBack = () => {
-    if (step === 1) navigate('/')
-    else {
+    if (step === 1) {
+      navigate('/')
+    } else {
       setStep(1)
       setErrors((prev) => ({ ...prev, login: '' }))
     }
@@ -94,21 +97,25 @@ const LoginPage = () => {
     setErrors({})
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const res = await api.post('/auth/login', {
+        email: formData.email,
+        password: formData.password
+      })
 
-      const user = authenticateUser(formData.email, formData.password)
+      const { token, user } = res.data
 
-      if (user) {
-        localStorage.setItem('token', 'mock-jwt-token-' + user.id)
-        localStorage.setItem('user', JSON.stringify(user))
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
 
-        navigate('/dashboard')
-      } else {
-        setErrors({ login: 'Email ou mot de passe incorrect' })
-      }
+      navigate('/dashboard')
     } catch (error) {
       console.error('Erreur connexion:', error)
-      setErrors({ login: 'Une erreur est survenue. Veuillez réessayer.' })
+
+      if (error.response?.status === 400 || error.response?.status === 401) {
+        setErrors({ login: 'Email ou mot de passe incorrect' })
+      } else {
+        setErrors({ login: 'Une erreur est survenue. Veuillez réessayer.' })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -185,7 +192,7 @@ const LoginPage = () => {
                   variant="primary"
                   type="button"
                   onClick={goNext}
-                  disabled={!validateEmail(formData.email) || !!errors.email}
+                  disabled={!formData.email.trim() || !!errors.email}
                 >
                   Suivant
                 </Button>
@@ -201,21 +208,10 @@ const LoginPage = () => {
               )}
             </div>
           </form>
-
-          <div className="test-credentials">
-            <p className="test-title">🧪 Identifiants de test (L1) :</p>
-            <div className="test-accounts">
-              <div className="test-account">
-                <strong>Utilisateur :</strong><br />
-                user@example.com / Password123
-              </div>
-              <div className="test-account">
-                <strong>Gestionnaire :</strong><br />
-                manager@example.com / Manager123
-              </div>
-            </div>
+          <div className="auth-link-block">
+             <Link to="/forgot-password">Mot de passe oublié ?</Link>
           </div>
-
+          
           <div className="login-footer">
             <p>
               Pas encore de compte ? <Link to="/register">S'inscrire</Link>

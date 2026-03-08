@@ -1,15 +1,29 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import './HomePage.css'
 
 import Button from '../components/Button'
 import Card from '../components/Card'
+import api from '../services/api'
 
 const HomePage = () => {
   const navigate = useNavigate()
 
+  const [apiMessage, setApiMessage] = useState('')
+
   const token = localStorage.getItem('token')
   const isAuthenticated = !!token
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+
+  useEffect(() => {
+    api.get('/test')
+      .then((res) => {
+        setApiMessage(res.data.message)
+      })
+      .catch((err) => {
+        console.error(err)
+      })
+  }, [])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -34,7 +48,10 @@ const HomePage = () => {
               en toute simplicité, depuis un seul espace sécurisé.
             </p>
 
-            {/* ✅ petit statut pro */}
+            {apiMessage && (
+              <p>{apiMessage}</p>
+            )}
+
             {isAuthenticated && (
               <div className="hero-user">
                 Connecté : <strong>{currentUser?.nom_complet || 'Utilisateur'}</strong>
@@ -85,31 +102,6 @@ const HomePage = () => {
               )}
             </div>
           </Card>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="section">
-        <div className="section-inner">
-          <h2 className="section-title">Fonctionnalités</h2>
-
-          <div className="features">
-            <Card className="feature-card" title="📌 Suivi des requêtes">
-              <p>Visualisez le statut de vos demandes en temps réel.</p>
-            </Card>
-
-            <Card className="feature-card" title="📊 Dashboard">
-              <p>Accédez aux statistiques et indicateurs clés.</p>
-            </Card>
-
-            <Card className="feature-card" title="🔔 Notifications">
-              <p>Recevez des alertes lors des changements de statut.</p>
-            </Card>
-
-            <Card className="feature-card" title="🧾 Historique">
-              <p>Consultez toutes vos requêtes passées.</p>
-            </Card>
-          </div>
         </div>
       </section>
     </div>

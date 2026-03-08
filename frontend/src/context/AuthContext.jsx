@@ -1,214 +1,140 @@
-import { createContext, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+// frontend/src/context/AuthContext.jsx — Contexte Auth (L1 mock + prêt pour L2 API)
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
 
-// Créer le contexte
-export const AuthContext = createContext()
+const AuthContext = createContext(null)
 
-// Provider du contexte
-export const AuthProvider = ({ children }) => {
-  const navigate = useNavigate()
-  
-  // ==================== ÉTAT ====================
-  const [user, setUser] = useState(null)
+// Clés localStorage (centralisées)
+const TOKEN_KEY = 'uqo_token'
+const USER_KEY = 'uqo_user'
+
+export function AuthProvider({ children }) {
+  // État
   const [token, setToken] = useState(null)
+  const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  
-  // ==================== INITIALISATION ====================
+
+  // Init depuis localStorage
   useEffect(() => {
-    // Récupérer token et user du localStorage au chargement
-    const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    
+    const storedToken = localStorage.getItem(TOKEN_KEY)
+    const storedUser = localStorage.getItem(USER_KEY)
+
     if (storedToken && storedUser) {
       try {
         setToken(storedToken)
         setUser(JSON.parse(storedUser))
-      } catch (error) {
-        console.error('Erreur parsing user:', error)
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+      } catch (e) {
+        console.error('Erreur parsing user localStorage:', e)
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USER_KEY)
       }
     }
-    
     setIsLoading(false)
   }, [])
-  
-  // ==================== CONNEXION ====================
-  const login = async (email, password) => {
+
+  // Helpers
+  const estConnecte = Boolean(token && user)
+  const estGestionnaire = user?.role === 'gestionnaire'
+
+  // Connexion : L1 (mock)
+  const login = useCallback(async (email, password) => {
     try {
-      // L1 : Authentification mockée
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Simuler une vérification des identifiants
+      await new Promise((r) => setTimeout(r, 600))
+
       const mockUsers = [
         {
           id: 1,
           email: 'user@example.com',
           password: 'Password123',
           nom_complet: 'Jean Dupont',
-          role: 'utilisateur'
+          role: 'utilisateur',
         },
         {
           id: 2,
           email: 'manager@example.com',
           password: 'Manager123',
           nom_complet: 'Marie Gestionnaire',
-          role: 'gestionnaire'
-        }
+          role: 'gestionnaire',
+        },
       ]
-      
-      const foundUser = mockUsers.find(
-        u => u.email === email && u.password === password
-      )
-      
-      if (!foundUser) {
-        throw new Error('Email ou mot de passe incorrect')
-      }
-      
-      // Créer un faux token JWT
-      const mockToken = 'mock-jwt-token-' + Date.now()
-      
-      // Créer l'objet utilisateur (sans le password)
+
+      const found = mockUsers.find((u) => u.email === email && u.password === password)
+      if (!found) throw new Error('Email ou mot de passe incorrect')
+
+      const jwt = `mock-jwt-${Date.now()}`
       const userData = {
-        id: foundUser.id,
-        email: foundUser.email,
-        nom_complet: foundUser.nom_complet,
-        role: foundUser.role
+        id: found.id,
+        email: found.email,
+        nom_complet: found.nom_complet,
+        role: found.role,
       }
-      
-      // Stocker dans localStorage
-      localStorage.setItem('token', mockToken)
-      localStorage.setItem('user', JSON.stringify(userData))
-      
-      // Mettre à jour l'état
-      setToken(mockToken)
+
+      localStorage.setItem(TOKEN_KEY, jwt)
+      localStorage.setItem(USER_KEY, JSON.stringify(userData))
+      setToken(jwt)
       setUser(userData)
-      
-      // TODO L2 : Appeler l'API réelle
-      // const response = await fetch('/api/auth/login/', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password })
-      // })
-      // 
-      // if (!response.ok) {
-      //   const error = await response.json()
-      //   throw new Error(error.message || 'Erreur de connexion')
-      // }
-      // 
-      // const data = await response.json()
-      // localStorage.setItem('token', data.token)
-      // localStorage.setItem('user', JSON.stringify(data.user))
-      // setToken(data.token)
-      // setUser(data.user)
-      
+
       return { success: true }
-      
-    } catch (error) {
-      console.error('Erreur login:', error)
-      return { 
-        success: false, 
-        error: error.message || 'Une erreur est survenue' 
-      }
+    } catch (err) {
+      console.error('Erreur login:', err)
+      return { success: false, error: err?.message || 'Une erreur est survenue' }
     }
-  }
-  
-  // ==================== INSCRIPTION ====================
-  const register = async (nom_complet, email, password) => {
+  }, [])
+
+  // Inscription : L1 (mock)
+  const register = useCallback(async (nom_complet, email, password) => {
     try {
-      // L1 : Simulation
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Simuler la création du compte
-      const newUser = {
-        id: Date.now(),
-        nom_complet,
-        email,
-        role: 'utilisateur'
-      }
-      
-      console.log('Compte créé (simulé):', newUser)
-      
-      // TODO L2 : Appeler l'API réelle
-      // const response = await fetch('/api/auth/register/', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ nom_complet, email, password })
-      // })
-      // 
-      // if (!response.ok) {
-      //   const error = await response.json()
-      //   throw new Error(error.message || 'Erreur d\'inscription')
-      // }
-      
+      await new Promise((r) => setTimeout(r, 600))
+
+      // Simulation (à remplacer par API en L2)
+      console.log('Inscription simulée:', { nom_complet, email })
+
       return { success: true }
-      
-    } catch (error) {
-      console.error('Erreur register:', error)
-      return { 
-        success: false, 
-        error: error.message || 'Une erreur est survenue' 
-      }
+    } catch (err) {
+      console.error('Erreur register:', err)
+      return { success: false, error: err?.message || 'Une erreur est survenue' }
     }
-  }
-  
-  // ==================== DÉCONNEXION ====================
-  const logout = () => {
-    // Supprimer du localStorage
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    
-    // Réinitialiser l'état
+  }, [])
+
+  // Déconnexion : ne fait QUE vider (pas de navigation ici)
+  const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
     setToken(null)
     setUser(null)
-    
-    // Rediriger vers login
-    navigate('/login')
-  }
-  
-  // ==================== VÉRIFICATION ====================
-  const isAuthenticated = () => {
-    return !!token && !!user
-  }
-  
-  const isManager = () => {
-    return user?.role === 'gestionnaire'
-  }
-  
-  // ==================== VALEUR DU CONTEXTE ====================
-  const value = {
-    // État
-    user,
-    token,
-    isLoading,
-    
-    // Fonctions
-    login,
-    register,
-    logout,
-    
-    // Helpers
-    isAuthenticated: isAuthenticated(),
-    isManager: isManager()
-  }
-  
-  // ==================== RENDU ====================
+  }, [])
+
+  const value = useMemo(() => {
+    return {
+      // state
+      token,
+      user,
+      isLoading,
+
+      // booleans
+      estConnecte,
+      estGestionnaire,
+
+      // actions
+      login,
+      register,
+      logout,
+    }
+  }, [token, user, isLoading, estConnecte, estGestionnaire, login, register, logout])
+
   if (isLoading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh'
-      }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
         <div>Chargement...</div>
       </div>
     )
   }
-  
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+// Hook
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error("useAuth() doit être utilisé à l'intérieur de <AuthProvider>.")
+  return ctx
 }

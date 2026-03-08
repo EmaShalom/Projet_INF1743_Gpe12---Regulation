@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { validateEmail, validatePassword, validateName } from '../utils/validators'
 import { ERROR_MESSAGES } from '../utils/constants'
+import api from '../services/api'
 import './RegisterPage.css'
 
 import Card from '../components/Card'
@@ -18,16 +19,11 @@ const RegisterPage = () => {
     passwordConfirmation: ''
   })
 
-  // ✅ Étapes: 1 = nom complet, 2 = email, 3 = mot de passe
   const [step, setStep] = useState(1)
-
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-
-  // BONUS UX
   const [showPassword, setShowPassword] = useState(false)
 
-  // ==================== VALIDATION ====================
   const validateField = (name, value) => {
     let error = ''
 
@@ -55,34 +51,49 @@ const RegisterPage = () => {
         if (!value) error = ERROR_MESSAGES.REQUIRED
         else if (value !== formData.password) error = ERROR_MESSAGES.PASSWORDS_DONT_MATCH
         break
+
+      default:
+        break
     }
 
     setErrors((prev) => ({ ...prev, [name]: error }))
+    return error
   }
 
-  // ==================== HANDLERS ====================
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+
+    if (errors.submit) {
+      setErrors((prev) => ({ ...prev, submit: '' }))
+    }
+
     validateField(name, value)
 
-    // si on change password, re-valider confirmation
     if (name === 'password' && formData.passwordConfirmation) {
-      validateField('passwordConfirmation', formData.passwordConfirmation)
+      const confirmationError =
+        formData.passwordConfirmation !== value
+          ? ERROR_MESSAGES.PASSWORDS_DONT_MATCH
+          : ''
+
+      setErrors((prev) => ({
+        ...prev,
+        passwordConfirmation: confirmationError
+      }))
     }
   }
 
   const goNext = () => {
     if (step === 1) {
-      validateField('fullName', formData.fullName)
-      if (!validateName(formData.fullName) || errors.fullName) return
+      const error = validateField('fullName', formData.fullName)
+      if (error || !validateName(formData.fullName)) return
       setStep(2)
       return
     }
 
     if (step === 2) {
-      validateField('email', formData.email)
-      if (!validateEmail(formData.email) || errors.email) return
+      const error = validateField('email', formData.email)
+      if (error || !validateEmail(formData.email)) return
       setStep(3)
     }
   }
@@ -99,14 +110,16 @@ const RegisterPage = () => {
       validateEmail(formData.email) &&
       validatePassword(formData.password) &&
       formData.password === formData.passwordConfirmation &&
-      Object.values(errors).every((e) => !e)
+      !errors.fullName &&
+      !errors.email &&
+      !errors.password &&
+      !errors.passwordConfirmation
     )
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Étapes 1/2 : avancer
     if (step === 1 || step === 2) {
       goNext()
       return
@@ -115,11 +128,16 @@ const RegisterPage = () => {
     if (!isFormValid()) return
 
     setIsLoading(true)
+    setErrors({})
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await api.post('/auth/register', {
+        nom_complet: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        confirmation: formData.passwordConfirmation
+      })
 
-      // Rediriger vers login avec message
       navigate('/login', {
         state: {
           message: 'Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter.'
@@ -127,7 +145,27 @@ const RegisterPage = () => {
       })
     } catch (error) {
       console.error('Erreur inscription:', error)
-      setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' })
+
+      const data = error.response?.data
+
+      if (error.response?.status === 400 && data?.erreurs) {
+        setErrors({
+          fullName: data.erreurs.nom_complet?.[0] || '',
+          email: data.erreurs.email?.[0] || '',
+          password: data.erreurs.password?.[0] || '',
+          passwordConfirmation: data.erreurs.confirmation?.[0] || '',
+          submit: ''
+        })
+      } else if (error.response?.status === 409 && data?.erreurs?.email) {
+        setErrors({
+          email: data.erreurs.email[0],
+          submit: ''
+        })
+      } else {
+        setErrors({
+          submit: data?.error || "Une erreur est survenue. Veuillez réessayer."
+        })
+      }
     } finally {
       setIsLoading(false)
     }

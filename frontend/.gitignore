@@ -1,0 +1,23 @@
+# frontend/.gitignore
+
+# Variables d'environnement
+.env
+.env.local
+.env.*.local
+
+# Dépendances
+node_modules/
+
+# Build Vite
+dist/
+dist-ssr/
+
+# Cache Vite
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
