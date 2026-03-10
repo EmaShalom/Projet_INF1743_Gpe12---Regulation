@@ -131,7 +131,7 @@ const RegisterPage = () => {
     setErrors({})
 
     try {
-      await api.post('/auth/register', {
+      await api.post('/auth/register/', {
         nom_complet: formData.fullName,
         email: formData.email,
         password: formData.password,

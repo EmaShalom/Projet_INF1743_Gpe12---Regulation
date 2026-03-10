@@ -89,7 +89,7 @@ const CreateRequestPage = () => {
     setErrors((prev) => ({ ...prev, submit: '' }))
 
     try {
-      await api.post('/requests', {
+      await api.post('/requests/', {
         titre: formData.titre,
         description: formData.description,
         type: formData.type

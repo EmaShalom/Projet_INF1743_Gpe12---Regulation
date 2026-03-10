@@ -18,7 +18,8 @@ const LoginPage = () => {
 
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    code: ''
   })
 
   const [errors, setErrors] = useState({})
@@ -36,6 +37,11 @@ const LoginPage = () => {
     if (name === 'password') {
       if (!value) error = 'Le mot de passe est requis'
       else if (value.length < 8) error = 'Le mot de passe doit contenir au moins 8 caractères'
+    }
+
+    if (name === 'code') {
+      if (!value.trim()) error = 'Le code est requis'
+      else if (value.trim().length !== 6) error = 'Le code doit contenir 6 chiffres'
     }
 
     setErrors((prev) => ({ ...prev, [name]: error }))
@@ -56,21 +62,22 @@ const LoginPage = () => {
       setErrors((prev) => ({ ...prev, email: "L'adresse email est requise" }))
       return
     }
-
     if (!validateEmail(formData.email)) {
       setErrors((prev) => ({ ...prev, email: "Format d'email invalide" }))
       return
     }
-
     setStep(2)
   }
 
   const goBack = () => {
     if (step === 1) {
       navigate('/')
-    } else {
+    } else if (step === 2) {
       setStep(1)
-      setErrors((prev) => ({ ...prev, login: '' }))
+      setErrors({})
+    } else {
+      setStep(2)
+      setErrors({})
     }
   }
 
@@ -86,38 +93,68 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    // Étape 1 → 2
     if (step === 1) {
       goNext()
       return
     }
 
-    if (!isFormValid()) return
+    // Étape 2 : email + password → envoie le code
+    if (step === 2) {
+      if (!isFormValid()) return
 
-    setIsLoading(true)
-    setErrors({})
+      setIsLoading(true)
+      setErrors({})
 
-    try {
-      const res = await api.post('/auth/login', {
-        email: formData.email,
-        password: formData.password
-      })
-
-      const { token, user } = res.data
-
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
-
-      navigate('/dashboard')
-    } catch (error) {
-      console.error('Erreur connexion:', error)
-
-      if (error.response?.status === 400 || error.response?.status === 401) {
-        setErrors({ login: 'Email ou mot de passe incorrect' })
-      } else {
-        setErrors({ login: 'Une erreur est survenue. Veuillez réessayer.' })
+      try {
+        await api.post('/auth/login/', {
+          email: formData.email,
+          password: formData.password
+        })
+        setStep(3)
+      } catch (error) {
+        console.error('Erreur connexion:', error)
+        if (error.response?.status === 400 || error.response?.status === 401) {
+          setErrors({ login: 'Email ou mot de passe incorrect' })
+        } else {
+          setErrors({ login: 'Une erreur est survenue. Veuillez réessayer.' })
+        }
+      } finally {
+        setIsLoading(false)
       }
-    } finally {
-      setIsLoading(false)
+      return
+    }
+
+    // Étape 3 : vérification du code
+    if (step === 3) {
+      if (formData.code.trim().length !== 6) return
+
+      setIsLoading(true)
+      setErrors({})
+
+      try {
+        const res = await api.post('/auth/verify-login/', {
+          email: formData.email,
+          code: formData.code
+        })
+
+        const { token, refresh, user } = res.data
+
+        localStorage.setItem('token', token)
+        localStorage.setItem('refresh', refresh)
+        localStorage.setItem('user', JSON.stringify(user))
+
+        navigate('/dashboard')
+      } catch (error) {
+        console.error('Erreur vérification code:', error)
+        if (error.response?.status === 400) {
+          setErrors({ login: 'Code invalide ou expiré' })
+        } else {
+          setErrors({ login: 'Une erreur est survenue. Veuillez réessayer.' })
+        }
+      } finally {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -161,7 +198,6 @@ const LoginPage = () => {
                   required
                   autoComplete="current-password"
                 />
-
                 <button
                   type="button"
                   className="show-password"
@@ -173,7 +209,27 @@ const LoginPage = () => {
               </div>
             )}
 
-            {step === 2 && errors.login && (
+            {step === 3 && (
+              <div className="code-block">
+                <p className="code-info">
+                  📧 Un code à 6 chiffres a été envoyé à <strong>{formData.email}</strong>.<br />
+                  Ce code est valide 15 minutes.
+                </p>
+                <Input
+                  label="Code de vérification"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleChange}
+                  placeholder="123456"
+                  error={errors.code}
+                  required
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                />
+              </div>
+            )}
+
+            {errors.login && (
               <div className="login-error">❌ {errors.login}</div>
             )}
 
@@ -187,7 +243,7 @@ const LoginPage = () => {
                 Retour
               </Button>
 
-              {step === 1 ? (
+              {step === 1 && (
                 <Button
                   variant="primary"
                   type="button"
@@ -196,7 +252,9 @@ const LoginPage = () => {
                 >
                   Suivant
                 </Button>
-              ) : (
+              )}
+
+              {step === 2 && (
                 <Button
                   variant="primary"
                   type="submit"
@@ -206,12 +264,24 @@ const LoginPage = () => {
                   Connexion
                 </Button>
               )}
+
+              {step === 3 && (
+                <Button
+                  variant="primary"
+                  type="submit"
+                  loading={isLoading}
+                  disabled={formData.code.trim().length !== 6 || isLoading}
+                >
+                  Vérifier le code
+                </Button>
+              )}
             </div>
           </form>
+
           <div className="auth-link-block">
-             <Link to="/forgot-password">Mot de passe oublié ?</Link>
+            <Link to="/forgot-password">Mot de passe oublié ?</Link>
           </div>
-          
+
           <div className="login-footer">
             <p>
               Pas encore de compte ? <Link to="/register">S'inscrire</Link>

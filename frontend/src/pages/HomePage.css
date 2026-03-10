@@ -103,18 +103,8 @@
   inset:0;
 
   /* ✅ overlay léger pour lire le texte sans cacher le slider */
-  background:
-    linear-gradient(
-      100deg,
-      rgba(245,247,251,0.90) 0%,
-      rgba(245,247,251,0.80) 55%,
-      rgba(245,247,251,0.60) 100%
-    ),
-    radial-gradient(
-      1200px 600px at 20% 20%,
-      rgba(20,108,127,0.14),
-      transparent 60%
-    );
+  background:transparent;
+    
 
   z-index: 0;
   pointer-events: none;

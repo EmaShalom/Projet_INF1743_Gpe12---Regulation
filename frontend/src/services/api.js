@@ -1,33 +1,36 @@
-// frontend/src/services/api.js — I2 (Membre 1)
-// Instance Axios centralisée : injection du token Bearer + gestion 401
-//
-// TOUTES les requêtes API doivent passer par cet objet "api",
-// jamais par un fetch() ou axios.create() séparé.
-//
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
-  timeout: 10_000,
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 api.interceptors.request.use((config) => {
+  if (!config.url.endsWith('/')) {
+    config.url += '/';
+  }
+
   const token = localStorage.getItem('token');
   if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      localStorage.removeItem('refresh');
       localStorage.removeItem('user');
       window.location.href = '/login?session=expired';
     }
+
     return Promise.reject(error);
   }
 );

@@ -1,8 +1,9 @@
 import { useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import Navbar from './Navbar'
+import Sidebar from './Sidebar'
 import './Layout.css'
 
-// 🔥 Images background
 import bg1 from '../assets/bg1.jpg'
 import bg2 from '../assets/bg2.jpg'
 import bg3 from '../assets/bg3.jpg'
@@ -10,17 +11,18 @@ import bg4 from '../assets/bg4.jpg'
 
 const Layout = ({ children }) => {
   const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Pages où on cache navbar + footer
   const hiddenRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
   const hideLayout =
-  hiddenRoutes.includes(location.pathname) ||
-  location.pathname.startsWith('/reset-password')
+    hiddenRoutes.includes(location.pathname) ||
+    location.pathname.startsWith('/reset-password')
+
+  const isAuthenticated = !!localStorage.getItem('token')
 
   return (
     <div className="layout">
-
-      {/* ===== BACKGROUND SLIDER ===== */}
       <div className="bg-fade">
         <div style={{ backgroundImage: `url(${bg1})` }} />
         <div style={{ backgroundImage: `url(${bg2})` }} />
@@ -28,23 +30,38 @@ const Layout = ({ children }) => {
         <div style={{ backgroundImage: `url(${bg4})` }} />
       </div>
 
-      {/* Overlay */}
       <div className="layout-bg-overlay" />
 
-      {/* Navbar */}
-      {!hideLayout && <Navbar />}
+      {!hideLayout && (
+        <Navbar
+          isAuthenticated={isAuthenticated}
+          onOpenSidebar={() => setSidebarOpen(true)}
+        />
+      )}
 
-      {/* Content */}
       <main className="layout-content">
-        {children}
+        {isAuthenticated && !hideLayout ? (
+          <div className="app-shell">
+            <Sidebar
+              isOpen={sidebarOpen}
+              isCollapsed={sidebarCollapsed}
+              onClose={() => setSidebarOpen(false)}
+              onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+            />
+
+            <div className={`app-main ${sidebarCollapsed ? 'expanded' : ''}`}>
+              {children}
+            </div>
+          </div>
+        ) : (
+          children
+        )}
       </main>
 
-      {/* ===== FOOTER ===== */}
       {!hideLayout && (
         <>
           <footer className="layout-footer-top">
             <div className="footer-top-inner">
-
               <div className="footer-top-brand">
                 <div className="footer-logo">UQO</div>
                 <div className="footer-subtitle">
@@ -53,7 +70,6 @@ const Layout = ({ children }) => {
               </div>
 
               <div className="footer-top-grid">
-
                 <div className="footer-col">
                   <h4>Gatineau</h4>
                   <p>283, boulevard Alexandre-Taché</p>
@@ -77,7 +93,6 @@ const Layout = ({ children }) => {
                   <p><strong>Téléphone:</strong> 450 530-7616</p>
                   <p><strong>Sans frais:</strong> 1 800 567-1283</p>
                 </div>
-
               </div>
             </div>
           </footer>
@@ -87,7 +102,6 @@ const Layout = ({ children }) => {
           </footer>
         </>
       )}
-
     </div>
   )
 }
