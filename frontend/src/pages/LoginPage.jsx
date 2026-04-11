@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { useNavigate, Link, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import { validateEmail } from '../utils/validators'
 import { useLang } from '../context/LanguageContext'
@@ -11,7 +11,7 @@ import './LoginPage.css'
 const LoginPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { loginFromToken } = useAuth()
+  const { loginFromToken, estConnecte } = useAuth()
   const { t } = useLang()
   const successMessage = location.state?.message
 
@@ -93,6 +93,8 @@ const LoginPage = () => {
   }
 
   const steps = [t.auth.step1, t.auth.step2, t.auth.step3]
+
+  if (estConnecte) return <Navigate to="/dashboard" replace />
 
   return (
     <div className="auth-page">

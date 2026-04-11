@@ -41,8 +41,10 @@ class RequestSerializer(serializers.ModelSerializer):
 
     def get_commentaires(self, obj):
         from apps.comments.serializers import CommentSerializer
-        commentaires = obj.comments.all().order_by("date_creation")
-        return CommentSerializer(commentaires, many=True).data
+        # Do NOT add .order_by() here — it would invalidate the prefetch_related
+        # cache set up in _request_qs() and trigger N extra SQL queries.
+        # Ordering is guaranteed by the Prefetch queryset (order_by date_creation).
+        return CommentSerializer(obj.comments.all(), many=True).data
 
     def get_historique(self, obj):
         return []

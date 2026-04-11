@@ -1,0 +1,152 @@
+
+---
+
+## 1. Tests backend (8 points)
+
+Les équipes peuvent ajouter des tests automatisés côté backend afin de valider le comportement de l’API et des règles métier.
+
+### Exemples d’éléments testables
+- inscription d’un utilisateur ;
+- authentification ;
+- création d’une demande ;
+- lecture des demandes ;
+- modification d’une demande ;
+- permissions selon le rôle ;
+- impossibilité de modifier une demande après `IN_PROGRESS`.
+
+### Attentes minimales
+- utilisation du framework de tests Django ou d’un outil équivalent ;
+- tests exécutables par une commande simple ;
+- résultats reproductibles.
+
+### Évaluation
+- **0 à 2 pts** : quelques tests présents, mais limités ;
+- **3 à 5 pts** : plusieurs tests pertinents couvrant les fonctionnalités principales ;
+- **6 à 8 pts** : tests bien structurés, couvrant les cas principaux et certains cas limites.
+
+---
+
+## 2. Tests frontend (8 points)
+
+Les équipes peuvent ajouter des tests automatisés côté frontend afin de valider les composants, formulaires et comportements principaux de l’interface.
+
+### Exemples d’éléments testables
+- affichage des composants principaux ;
+- comportement des formulaires ;
+- validation des champs ;
+- affichage des messages d’erreur ;
+- rendu conditionnel selon le rôle ;
+- navigation selon l’état d’authentification.
+
+### Attentes minimales
+- utilisation d’un outil adapté à React (ex. Vitest, React Testing Library ou équivalent) ;
+- tests exécutables par une commande simple ;
+- résultats reproductibles.
+
+### Évaluation
+- **0 à 2 pts** : quelques tests présents, mais peu représentatifs ;
+- **3 à 5 pts** : tests couvrant les composants ou formulaires principaux ;
+- **6 à 8 pts** : tests bien structurés, couvrant plusieurs comportements significatifs de l’interface.
+
+---
+
+## 3. Optimisation mesurée (4 points)
+
+Les points d’optimisation ne seront accordés que si l’équipe démontre :
+
+1. un **problème réel identifié** ;
+2. une **correction ciblée** ;
+3. une **preuve mesurable avant / après**.
+
+Une optimisation non mesurée, non expliquée ou purement déclarative ne sera pas valorisée.
+
+---
+
+### 3.1 Optimisation React (2 points)
+
+L’équipe peut obtenir jusqu’à **2 points** en améliorant une lenteur ou un coût de rendu côté frontend.
+
+#### Optimisations acceptées
+- utilisation pertinente de `React.memo` ;
+- stabilisation de props avec `useMemo` ou `useCallback` ;
+- chargement différé avec `React.lazy` ;
+- réduction de re-renders inutiles ;
+- réduction d’appels API inutiles.
+
+#### Preuves attendues
+L’équipe doit montrer dans le `README.md` :
+- le problème observé ;
+- l’outil utilisé pour le diagnostiquer (ex. React DevTools Profiler) ;
+- la correction appliquée ;
+- le résultat observé après correction.
+
+#### Exemples de preuves acceptées
+- nombre de re-renders réduit ;
+- temps de rendu ou de commit réduit ;
+- composant lourd chargé seulement à la demande ;
+- amélioration visible de la fluidité.
+
+#### Évaluation
+- **1 pt** : optimisation présente et expliquée, mais preuve limitée ;
+- **2 pts** : optimisation pertinente, mesurée et clairement justifiée.
+
+---
+
+### 3.2 Optimisation Django (2 points)
+
+L’équipe peut obtenir jusqu’à **2 points** en améliorant l’efficacité d’une vue, d’un endpoint API ou d’un accès aux données.
+
+#### Optimisations acceptées
+- utilisation pertinente de `select_related` ;
+- utilisation pertinente de `prefetch_related` ;
+- ajout d’une pagination sur une liste ;
+- réduction du nombre de requêtes SQL ;
+- allègement d’un queryset ou d’un serializer.
+
+#### Preuves attendues
+L’équipe doit montrer dans le `README.md` :
+- le problème observé ;
+- l’outil ou la méthode de diagnostic utilisée (ex. Django Debug Toolbar, logs SQL, `EXPLAIN`) ;
+- la correction appliquée ;
+- le résultat observé après correction.
+
+#### Exemples de preuves acceptées
+- nombre de requêtes SQL réduit ;
+- temps de réponse amélioré ;
+- liste paginée au lieu d’un retour complet ;
+- suppression d’un problème de type N+1.
+
+#### Évaluation
+- **1 pt** : optimisation présente et expliquée, mais preuve limitée ;
+- **2 pts** : optimisation pertinente, mesurée et clairement justifiée.
+
+---
+
+## 4. Audit et justification (obligatoire pour le bonus)
+
+Toute optimisation doit être accompagnée d’une **courte justification dans le README**.
+
+Le format suivant est recommandé :
+
+### Optimisation React
+- Problème observé :
+- Outil utilisé :
+- Correction appliquée :
+- Résultat avant / après :
+
+### Optimisation Django
+- Problème observé :
+- Outil utilisé :
+- Correction appliquée :
+- Résultat avant / après :
+
+---
+
+## Conditions d’attribution du bonus
+
+- Le bonus est **facultatif**.
+- Le bonus ne peut être accordé que si le projet principal est fonctionnel.
+- Les tests et optimisations doivent être clairement identifiés dans le dépôt.
+- Les commandes d’exécution des tests doivent être indiquées dans le `README.md`.
+- Les optimisations **non mesurées ou non justifiées ne seront pas valorisées**.
+
