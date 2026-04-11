@@ -1,12 +1,4 @@
-import { useContext } from 'react'
-import { AuthContext } from '../context/AuthContext'
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  
-  if (!context) {
-    throw new Error('useAuth doit être utilisé dans un AuthProvider')
-  }
-  
-  return context
-}
+// Re-export from the single source of truth so both import paths work:
+//   import { useAuth } from '../context/useAuth'
+//   import { useAuth } from '../context/AuthContext'
+export { useAuth } from './AuthContext'

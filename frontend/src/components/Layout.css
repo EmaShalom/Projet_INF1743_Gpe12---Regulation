@@ -1,189 +1,136 @@
-.layout {
-  position: relative;
-  min-height: 100vh;
-  overflow-x: hidden;
+/* ============================================================
+   UQO REQUESTS — App Shell Layout
+   Topbar: fixed full-width | Sidebar: fixed left | Footer: full-width
+   ============================================================ */
+
+/* ── App background ──────────────────────────────────────── */
+body {
+  background: #f5f0f2;
 }
 
-/* ===== Background slider ===== */
-.bg-fade {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.bg-fade > div {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0;
-  animation: bgFade 24s infinite;
-  transform: scale(1.04);
-}
-
-.bg-fade > div:nth-child(1) { animation-delay: 0s; }
-.bg-fade > div:nth-child(2) { animation-delay: 6s; }
-.bg-fade > div:nth-child(3) { animation-delay: 12s; }
-.bg-fade > div:nth-child(4) { animation-delay: 18s; }
-
-@keyframes bgFade {
-  0% { opacity: 0; }
-  8% { opacity: 1; }
-  25% { opacity: 1; }
-  33% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-/* ===== Overlay ===== */
-.layout-bg-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(8, 27, 41, 0.42),
-      rgba(8, 27, 41, 0.55)
-    );
-  pointer-events: none;
-}
-
-/* ===== Main content area ===== */
-.layout-content {
-  position: relative;
-  z-index: 2;
-  padding: 24px;
-}
-
+/* ── Authenticated shell ─────────────────────────────────── */
 .app-shell {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 24px;
-  align-items: start;
-  width: 100%;
+  /* normal flow — topbar and sidebar are fixed (out of flow) */
+  /* footer is a sibling of app-body, so it spans full width naturally */
 }
 
-.app-main {
-  min-width: 0;
-  width: 100%;
-}
-
-.app-main.expanded {
-  width: 100%;
-}
-
-/* ===== Footer ===== */
-.layout-footer-top,
-.layout-footer {
-  position: relative;
-  z-index: 2;
-}
-
-.layout-footer-top {
-  margin-top: 40px;
-  background: rgba(17, 24, 39, 0.88);
-  color: white;
-  backdrop-filter: blur(6px);
-}
-
-.footer-top-inner {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 32px 24px;
-  display: grid;
-  gap: 24px;
-}
-
-.footer-top-brand {
+/* ── Content body (shifts right for sidebar, down for topbar) */
+.app-body {
+  margin-left: var(--sidebar-width);
+  padding-top: var(--navbar-height);
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
-.footer-logo {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+.app-page-content {
+  flex: 1;
+  padding: var(--space-6) var(--space-8);
 }
 
-.footer-subtitle {
-  color: rgba(255, 255, 255, 0.82);
+/* ── Public layout (topbar, no sidebar) ──────────────────── */
+.public-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.footer-top-grid {
+.public-content {
+  flex: 1;
+  padding-top: var(--navbar-height);
+}
+
+/* ── Footer — FULL WIDTH, no margin adjustments ──────────── */
+.app-footer {
+  background: var(--footer-bg);
+  color: rgba(237,230,232,0.65);
+  /* Full width: starts at x=0 naturally as a block element
+     Sidebar is fixed and visually floats above the page;
+     footer content is padded to stay readable */
+  padding-left: var(--sidebar-width);
+}
+
+.app-footer--public {
+  padding-left: 0;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-8);
   display: grid;
-  grid-template-columns: repeat(2, minmax(240px, 1fr));
-  gap: 24px;
+  grid-template-columns: auto 1fr 1fr;
+  gap: var(--space-12);
+  align-items: start;
 }
 
-.footer-col h4 {
-  margin: 0 0 12px;
-  font-size: 20px;
+.footer-brand {}
+
+.footer-brand-name {
+  font-size: var(--text-lg);
+  font-weight: var(--font-extrabold);
+  color: var(--palette-beige-100);
+  letter-spacing: 0.02em;
+  margin-bottom: var(--space-1);
+}
+
+.footer-brand-tagline {
+  font-size: var(--text-xs);
+  color: var(--palette-muted-500);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.footer-col h5 {
+  color: var(--palette-beige-200);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-4);
 }
 
 .footer-col p {
-  margin: 0 0 6px;
-  color: rgba(255, 255, 255, 0.84);
-  line-height: 1.55;
+  color: rgba(237,230,232,0.50);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-1);
 }
 
-.footer-spacer {
-  height: 10px;
-}
+.footer-col strong { color: rgba(237,230,232,0.75); }
 
-.layout-footer {
-  background: rgba(3, 7, 18, 0.94);
-  color: rgba(255, 255, 255, 0.85);
+.footer-bottom {
+  background: rgba(0,0,0,0.30);
   text-align: center;
-  padding: 14px 20px;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--palette-muted-500);
+  /* No margin adjustments — spans full width */
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 1100px) {
-  .layout-content {
-    padding: 20px;
-  }
-
-  .app-shell {
-    gap: 20px;
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .app-page-content {
+    padding: var(--space-5) var(--space-6);
   }
 }
 
-@media (max-width: 900px) {
-  .layout-content {
-    padding: 16px;
+@media (max-width: 768px) {
+  .app-body {
+    margin-left: 0;
   }
 
-  .app-shell {
+  .app-page-content {
+    padding: var(--space-4);
+  }
+
+  .app-footer {
+    padding-left: 0;
+  }
+
+  .footer-inner {
     grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .footer-top-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .footer-top-inner {
-    padding: 24px 16px;
-  }
-}
-
-@media (max-width: 600px) {
-  .layout-content {
-    padding: 12px;
-  }
-
-  .footer-logo {
-    font-size: 24px;
-  }
-
-  .footer-col h4 {
-    font-size: 18px;
-  }
-
-  .layout-footer {
-    font-size: 14px;
-    padding: 12px 16px;
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-4);
   }
 }

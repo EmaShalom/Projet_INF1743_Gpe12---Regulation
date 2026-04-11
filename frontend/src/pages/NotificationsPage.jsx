@@ -1,160 +1,177 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../services/api'
+import { notificationService } from '../services/notificationService'
+import { requestService } from '../services/requestService'
 import { formatDateTime, formatRelativeDate } from '../utils/formatters'
-
-import Card from '../components/Card'
-import Button from '../components/Button'
-
+import { useLang } from '../context/LanguageContext'
 import './NotificationsPage.css'
 
 const NotificationsPage = () => {
+  const { t } = useLang()
   const [notifications, setNotifications] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [replyValues, setReplyValues] = useState({})
   const [submittingId, setSubmittingId] = useState(null)
+  const [readIds, setReadIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('uqo_read_notifs') || '[]')) }
+    catch { return new Set() }
+  })
 
-  const loadNotifications = async () => {
-    setIsLoading(true)
-    setError('')
-
+  const loadNotifications = useCallback(async () => {
+    setIsLoading(true); setError('')
     try {
-      const res = await api.get('/notifications')
-      setNotifications(res.data?.notifications || [])
-    } catch (err) {
-      console.error('Erreur chargement notifications:', err)
-      setError("Impossible de charger les notifications.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadNotifications()
+      const data = await notificationService.lister()
+      setNotifications(data)
+    } catch {
+      setError(t.common.error)
+    } finally { setIsLoading(false) }
   }, [])
 
-  const handleReplyChange = (commentId, value) => {
-    setReplyValues((prev) => ({
-      ...prev,
-      [commentId]: value
-    }))
+  useEffect(() => { loadNotifications() }, [loadNotifications])
+
+  const markAllRead = () => {
+    const newSet = new Set(notifications.map(n => n.id))
+    setReadIds(newSet)
+    localStorage.setItem('uqo_read_notifs', JSON.stringify([...newSet]))
   }
 
-  const handleReplySubmit = async (commentId, requestId) => {
-    const contenu = replyValues[commentId]?.trim()
+  const markRead = (id) => {
+    const newSet = new Set(readIds)
+    newSet.add(id)
+    setReadIds(newSet)
+    localStorage.setItem('uqo_read_notifs', JSON.stringify([...newSet]))
+  }
 
+  const handleReplyChange = (id, value) => setReplyValues(p => ({ ...p, [id]: value }))
+
+  const handleReplySubmit = async (notifId, requestId) => {
+    const contenu = replyValues[notifId]?.trim()
     if (!contenu || contenu.length < 5) return
-
-    setSubmittingId(commentId)
-
+    setSubmittingId(notifId)
     try {
-      await api.post(`/requests/${requestId}/comments`, {
-        contenu
-      })
-
-      setReplyValues((prev) => ({
-        ...prev,
-        [commentId]: ''
-      }))
-
+      await requestService.ajouterCommentaire(requestId, contenu)
+      setReplyValues(p => ({ ...p, [notifId]: '' }))
+      markRead(notifId)
       await loadNotifications()
     } catch (err) {
-      console.error('Erreur réponse notification:', err)
-      setError(err.response?.data?.error || "Impossible d'envoyer la réponse.")
-    } finally {
-      setSubmittingId(null)
-    }
+      setError(err.response?.data?.error || t.common.error)
+    } finally { setSubmittingId(null) }
   }
+
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length
 
   if (isLoading) {
     return (
-      <div className="notifications-page">
-        <div className="notifications-container">
-          <div className="loading-container">
-            <div className="spinner-large"></div>
-            <p>Chargement des notifications...</p>
-          </div>
-        </div>
+      <div className="notif-page-loading">
+        <div className="spinner spinner-green spinner-large" />
+        <span>{t.notifications.loading}</span>
       </div>
     )
   }
 
   return (
-    <div className="notifications-page">
-      <div className="notifications-container">
-        <div className="page-header">
-          <h1>🔔 Notifications</h1>
-          <p>Consultez les commentaires laissés par les gestionnaires sur vos demandes.</p>
+    <div className="notif-page">
+      {/* Header */}
+      <div className="notif-page-header">
+        <div className="notif-page-header-left">
+          <h1>🔔 {t.notifications.title}</h1>
+          <p>{t.notifications.subtitle}</p>
         </div>
-
-        {error && (
-          <div className="submit-error">❌ {error}</div>
-        )}
-
-        {notifications.length === 0 ? (
-          <Card className="empty-card" title="Aucune notification">
-            <p>Vous n’avez aucun commentaire de gestionnaire pour le moment.</p>
-          </Card>
-        ) : (
-          <div className="notifications-list">
-            {notifications.map((notif) => (
-              <Card
-                key={notif.id}
-                className="notification-card"
-                title={`📩 ${notif.demande?.titre || 'Demande'}`}
-              >
-                <div className="notification-meta">
-                  <p>
-                    <strong>Gestionnaire :</strong> {notif.auteur?.nom_complet || 'Gestionnaire'}
-                  </p>
-                  <p>
-                    <strong>Statut de la demande :</strong> {notif.demande?.statut || '—'}
-                  </p>
-                  <p>
-                    <strong>Date :</strong> {formatRelativeDate(notif.date_creation)} • {formatDateTime(notif.date_creation)}
-                  </p>
-                </div>
-
-                <div className="notification-comment">
-                  {notif.contenu}
-                </div>
-
-                <div className="notification-actions">
-                  <Link to={`/requests/${notif.demande?.id}`}>
-                    <Button variant="secondary">
-                      Ouvrir la demande
-                    </Button>
-                  </Link>
-                </div>
-
-                <div className="reply-box">
-                  <label className="reply-label">Répondre</label>
-                  <textarea
-                    className="reply-textarea"
-                    rows="3"
-                    placeholder="Écrire une réponse..."
-                    value={replyValues[notif.id] || ''}
-                    onChange={(e) => handleReplyChange(notif.id, e.target.value)}
-                  />
-
-                  <div className="reply-footer">
-                    <span className="reply-help">Minimum 5 caractères</span>
-                    <Button
-                      variant="primary"
-                      loading={submittingId === notif.id}
-                      disabled={(replyValues[notif.id] || '').trim().length < 5 || submittingId === notif.id}
-                      onClick={() => handleReplySubmit(notif.id, notif.demande?.id)}
-                    >
-                      Répondre
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+        {unreadCount > 0 && (
+          <button className="notif-mark-all-btn" onClick={markAllRead}>
+            {t.notifications.markAllRead}
+          </button>
         )}
       </div>
+
+      {error && <div className="notif-page-error">⚠ {error}</div>}
+
+      {notifications.length === 0 ? (
+        <div className="notif-page-empty">
+          <div className="notif-page-empty-icon">🔔</div>
+          <h3>{t.notifications.empty}</h3>
+          <p>{t.notifications.emptyHint}</p>
+        </div>
+      ) : (
+        <div className="notif-page-list">
+          {notifications.map(notif => {
+            const isUnread = !readIds.has(notif.id)
+            const requestId = notif.demande?.id || notif.request_id
+            return (
+              <div
+                key={notif.id}
+                className={`notif-card${isUnread ? ' unread' : ''}`}
+                onClick={() => markRead(notif.id)}
+              >
+                {/* Card header */}
+                <div className="notif-card-header">
+                  <div className="notif-card-icon">💬</div>
+                  <div className="notif-card-meta">
+                    <div className="notif-card-title">{notif.demande?.titre || t.notifications.newMessage}</div>
+                    <div className="notif-card-from">
+                      {notif.auteur?.nom_complet || '?'}
+                      {notif.auteur?.role === 'gestionnaire' && (
+                        <span className="notif-card-from-badge">{t.request.managerBadge}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="notif-card-right">
+                    <span className="notif-card-time">{formatRelativeDate(notif.date_creation)}</span>
+                    {isUnread && <span className="notif-unread-dot" />}
+                  </div>
+                </div>
+
+                {/* Card body */}
+                <div className="notif-card-body">
+                  <div className="notif-message">{notif.contenu}</div>
+
+                  <div className="notif-actions">
+                    <Link
+                      to={`/requests/${requestId}`}
+                      className="notif-open-btn"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      → {t.notifications.openRequest}
+                    </Link>
+                    {notif.demande?.statut !== 'CLOSED' && (
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                        {t.status[notif.demande?.statut] || notif.demande?.statut}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Reply box */}
+                  {notif.demande?.statut !== 'CLOSED' && (
+                    <div className="notif-reply-wrap" onClick={e => e.stopPropagation()}>
+                      <span className="notif-reply-label">{t.notifications.reply}</span>
+                      <textarea
+                        className="notif-reply-textarea"
+                        rows="2"
+                        placeholder={t.notifications.replyPlaceholder}
+                        value={replyValues[notif.id] || ''}
+                        onChange={e => handleReplyChange(notif.id, e.target.value)}
+                      />
+                      <div className="notif-reply-footer">
+                        <span className="notif-reply-hint">{t.request.messageMinLength}</span>
+                        <button
+                          className="notif-reply-btn"
+                          loading={String(submittingId === notif.id)}
+                          disabled={(replyValues[notif.id] || '').trim().length < 5 || submittingId === notif.id}
+                          onClick={() => handleReplySubmit(notif.id, requestId)}
+                        >
+                          {submittingId === notif.id ? <span className="spinner" /> : '↑'}
+                          {t.notifications.send}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

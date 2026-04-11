@@ -2,306 +2,256 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link, useParams } from 'react-router-dom'
 import { REQUEST_TYPES, CHAR_LIMITS, REQUEST_STATUS } from '../utils/constants'
 import { validateTitle, validateDescription } from '../utils/validators'
-import api from '../services/api'
-
-import Card from '../components/Card'
-import Input from '../components/Input'
-import Select from '../components/Select'
-import Button from '../components/Button'
-
+import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LanguageContext'
+import { requestService } from '../services/requestService'
 import './CreateRequestPage.css'
 
 const EditRequestPage = () => {
   const navigate = useNavigate()
   const { id } = useParams()
+  const { user } = useAuth()
+  const { t } = useLang()
+  const f = t.form
 
-  const [formData, setFormData] = useState({
-    titre: '',
-    description: '',
-    type: ''
-  })
-
-  const [request, setRequest] = useState(null)
+  const [formData, setFormData] = useState({ titre: '', description: '', type: '' })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const [request, setRequest] = useState(null)
 
   const validateField = (name, value) => {
     let error = ''
-
     if (name === 'titre') {
-      if (!value.trim()) {
-        error = 'Le titre est requis'
-      } else if (!validateTitle(value)) {
-        if (value.trim().length < CHAR_LIMITS.TITLE_MIN) {
-          error = `Le titre doit contenir au moins ${CHAR_LIMITS.TITLE_MIN} caractères`
-        } else if (value.trim().length > CHAR_LIMITS.TITLE_MAX) {
-          error = `Le titre ne peut pas dépasser ${CHAR_LIMITS.TITLE_MAX} caractères`
-        } else {
-          error = 'Titre invalide'
-        }
-      }
+      if (!value.trim()) error = `${f.titleLabel} ${f.required}`
+      else if (value.trim().length < CHAR_LIMITS.TITLE_MIN) error = `Min. ${CHAR_LIMITS.TITLE_MIN} ${f.chars}`
+      else if (value.trim().length > CHAR_LIMITS.TITLE_MAX) error = `Max. ${CHAR_LIMITS.TITLE_MAX} ${f.chars}`
+      else if (!validateTitle(value)) error = `${f.titleLabel} invalide`
     }
-
     if (name === 'description') {
-      if (!value.trim()) {
-        error = 'La description est requise'
-      } else if (!validateDescription(value)) {
-        if (value.trim().length < CHAR_LIMITS.DESCRIPTION_MIN) {
-          error = `La description doit contenir au moins ${CHAR_LIMITS.DESCRIPTION_MIN} caractères`
-        } else if (value.trim().length > CHAR_LIMITS.DESCRIPTION_MAX) {
-          error = `La description ne peut pas dépasser ${CHAR_LIMITS.DESCRIPTION_MAX} caractères`
-        } else {
-          error = 'Description invalide'
-        }
-      }
+      if (!value.trim()) error = `${f.descriptionLabel} ${f.required}`
+      else if (value.trim().length < CHAR_LIMITS.DESCRIPTION_MIN) error = `Min. ${CHAR_LIMITS.DESCRIPTION_MIN} ${f.chars}`
+      else if (value.trim().length > CHAR_LIMITS.DESCRIPTION_MAX) error = `Max. ${CHAR_LIMITS.DESCRIPTION_MAX} ${f.chars}`
+      else if (!validateDescription(value)) error = `${f.descriptionLabel} invalide`
     }
-
-    if (name === 'type') {
-      if (!value) error = 'Le type est requis'
-    }
-
-    setErrors((prev) => ({ ...prev, [name]: error }))
+    if (name === 'type' && !value) error = `${f.typeLabel} ${f.required}`
+    setErrors(p => ({ ...p, [name]: error }))
     return error
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData(p => ({ ...p, [name]: value }))
     validateField(name, value)
-
-    if (errors.submit) {
-      setErrors((prev) => ({ ...prev, submit: '' }))
-    }
+    if (errors.submit) setErrors(p => ({ ...p, submit: '' }))
   }
 
-  const isFormValid = () => {
-    return (
-      validateTitle(formData.titre) &&
-      validateDescription(formData.description) &&
-      !!formData.type &&
-      !errors.titre &&
-      !errors.description &&
-      !errors.type
-    )
-  }
+  const isFormValid = () =>
+    validateTitle(formData.titre) &&
+    validateDescription(formData.description) &&
+    !!formData.type &&
+    !errors.titre && !errors.description && !errors.type
 
   useEffect(() => {
-    const loadRequest = async () => {
-      setIsLoading(true)
-      setErrors({})
-
+    const load = async () => {
+      setIsLoading(true); setErrors({})
       try {
-        const res = await api.get(`/requests/${id}`)
-        const requestData = res.data?.request
+        const data = await requestService.obtenir(id)
+        if (!data) { setErrors({ page: t.request.notFound }); return }
+        const canEdit = data.createur_id === user?.id && data.statut === REQUEST_STATUS.SUBMITTED
+        if (!canEdit) { setErrors({ page: f.notEditable }); return }
 
-        if (!requestData) {
-          setErrors({ submit: 'Demande introuvable.' })
-          return
-        }
-
-        const isOwner = requestData.createur_id === currentUser.id
-        const canEdit = isOwner && requestData.statut === REQUEST_STATUS.SUBMITTED
-
-        if (!canEdit) {
-          setErrors({
-            submit: 'Modification impossible. Seules vos demandes au statut SUBMITTED peuvent être modifiées.'
-          })
-          return
-        }
-
-        setRequest(requestData)
-        setFormData({
-          titre: requestData.titre || '',
-          description: requestData.description || '',
-          type: requestData.type || ''
-        })
-      } catch (error) {
-        console.error('Erreur chargement demande:', error)
-
-        if (error.response?.status === 403) {
-          setErrors({ submit: "Vous n'avez pas accès à cette demande." })
-        } else if (error.response?.status === 404) {
-          setErrors({ submit: 'Demande introuvable.' })
-        } else {
-          setErrors({ submit: 'Une erreur est survenue lors du chargement.' })
-        }
-      } finally {
-        setIsLoading(false)
-      }
+        setRequest(data)
+        setFormData({ titre: data.titre || '', description: data.description || '', type: data.type || '' })
+      } catch (err) {
+        if (err.response?.status === 403) setErrors({ page: t.request.noAccess })
+        else if (err.response?.status === 404) setErrors({ page: t.request.notFound })
+        else setErrors({ page: t.common.error })
+      } finally { setIsLoading(false) }
     }
-
-    loadRequest()
-  }, [id, currentUser.id])
+    load()
+  }, [id, user?.id])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!isFormValid()) return
-
-    setIsSubmitting(true)
-    setErrors((prev) => ({ ...prev, submit: '' }))
-
+    setIsSubmitting(true); setErrors(p => ({ ...p, submit: '' }))
     try {
-      await api.put(`/requests/${id}`, {
+      await requestService.modifier(id, {
         titre: formData.titre,
         description: formData.description,
-        type: formData.type
+        type: formData.type,
       })
-
-      navigate(`/requests/${id}`, {
-        state: { message: 'La demande a été modifiée avec succès.' }
-      })
-    } catch (error) {
-      console.error('Erreur modification demande:', error)
-
-      const data = error.response?.data
-
-      if (error.response?.status === 400 && data?.erreurs) {
-        setErrors((prev) => ({
-          ...prev,
+      navigate(`/requests/${id}`, { state: { message: 'La demande a été modifiée avec succès.' } })
+    } catch (err) {
+      const data = err.response?.data
+      if (err.response?.status === 400 && data?.erreurs) {
+        setErrors(p => ({
+          ...p,
           titre: data.erreurs.titre?.[0] || '',
           description: data.erreurs.description?.[0] || '',
           type: data.erreurs.type?.[0] || '',
-          submit: ''
-        }))
-      } else if (error.response?.status === 403) {
-        setErrors((prev) => ({
-          ...prev,
-          submit: data?.error || 'Modification non autorisée.'
         }))
       } else {
-        setErrors((prev) => ({
-          ...prev,
-          submit: data?.error || 'Une erreur est survenue lors de la modification.'
-        }))
+        setErrors(p => ({ ...p, submit: data?.error || t.common.error }))
       }
-    } finally {
-      setIsSubmitting(false)
-    }
+    } finally { setIsSubmitting(false) }
   }
 
-  const typeOptions = [
-    { value: '', label: '-- Sélectionnez un type --' },
-    ...Object.entries(REQUEST_TYPES).map(([, label]) => ({
-      value: label,
-      label
-    }))
-  ]
+  const typeOptions = Object.entries(REQUEST_TYPES).map(([, label]) => ({ value: label, label }))
 
   if (isLoading) {
     return (
-      <div className="create-request-page">
-        <div className="create-request-container">
-          <div className="loading-container">
-            <div className="spinner-large"></div>
-            <p>Chargement de la demande...</p>
-          </div>
-        </div>
+      <div className="req-form-loading">
+        <div className="spinner spinner-green spinner-large" />
+        <span>{f.loadingRequest}</span>
+      </div>
+    )
+  }
+
+  if (errors.page) {
+    return (
+      <div className="req-form-error-state">
+        <div style={{ fontSize: '3rem' }}>⚠️</div>
+        <h2>{t.common.error}</h2>
+        <p>{errors.page}</p>
+        <button className="req-form-back-btn" onClick={() => navigate('/dashboard')}>
+          ← {t.request.backToDashboard}
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="create-request-page">
-      <div className="create-request-container">
-        <nav className="breadcrumb">
-          <Link to="/dashboard">Tableau de bord</Link>
-          <span className="separator">›</span>
-          <Link to={`/requests/${id}`}>Demande #{id}</Link>
-          <span className="separator">›</span>
-          <span>Modifier</span>
-        </nav>
+    <div className="req-form-page">
+      {/* Breadcrumb */}
+      <nav className="req-form-breadcrumb">
+        <Link to="/dashboard">{t.request.backToDashboard}</Link>
+        <span className="req-form-breadcrumb-sep">›</span>
+        <Link to={`/requests/${id}`}>{t.request.request} #{id}</Link>
+        <span className="req-form-breadcrumb-sep">›</span>
+        <span>{t.common.edit}</span>
+      </nav>
 
-        <div className="page-header">
-          <h1>Modifier la demande</h1>
-          <p>Mettez à jour les informations de votre demande</p>
+      <div className="req-form-layout">
+        {/* Main form card */}
+        <div className="req-form-main">
+          <div className="req-form-card">
+            <div className="req-form-card-header">
+              <span className="req-form-card-title">✏️ {f.editTitle}</span>
+              <p className="req-form-card-subtitle">{f.editSubtitle}</p>
+            </div>
+            <div className="req-form-card-body">
+              <form onSubmit={handleSubmit}>
+
+                {/* Title */}
+                <div className="req-field">
+                  <label className="req-label" htmlFor="titre">
+                    {f.titleLabel} <span className="req-required">*</span>
+                  </label>
+                  <input
+                    id="titre"
+                    name="titre"
+                    type="text"
+                    className={`req-input${errors.titre ? ' req-input-error' : ''}`}
+                    value={formData.titre}
+                    onChange={handleChange}
+                    placeholder={f.titlePlaceholder}
+                    maxLength={CHAR_LIMITS.TITLE_MAX}
+                  />
+                  <div className="req-field-footer">
+                    {errors.titre
+                      ? <span className="req-error-msg">⚠ {errors.titre}</span>
+                      : <span />
+                    }
+                    <span className="req-char-count">{formData.titre.length} / {CHAR_LIMITS.TITLE_MAX}</span>
+                  </div>
+                </div>
+
+                {/* Type */}
+                <div className="req-field">
+                  <label className="req-label" htmlFor="type">
+                    {f.typeLabel} <span className="req-required">*</span>
+                  </label>
+                  <select
+                    id="type"
+                    name="type"
+                    className={`req-select${errors.type ? ' req-input-error' : ''}`}
+                    value={formData.type}
+                    onChange={handleChange}
+                  >
+                    <option value="">{f.typeDefault}</option>
+                    {typeOptions.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  {errors.type && <span className="req-error-msg">⚠ {errors.type}</span>}
+                </div>
+
+                {/* Description */}
+                <div className="req-field">
+                  <label className="req-label" htmlFor="description">
+                    {f.descriptionLabel} <span className="req-required">*</span>
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    className={`req-textarea${errors.description ? ' req-input-error' : ''}`}
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder={f.descriptionPlaceholder}
+                    rows="7"
+                    maxLength={CHAR_LIMITS.DESCRIPTION_MAX}
+                  />
+                  <div className="req-field-footer">
+                    {errors.description
+                      ? <span className="req-error-msg">⚠ {errors.description}</span>
+                      : <span />
+                    }
+                    <span className="req-char-count">{formData.description.length} / {CHAR_LIMITS.DESCRIPTION_MAX}</span>
+                  </div>
+                </div>
+
+                {errors.submit && (
+                  <div className="req-form-error">⚠ {errors.submit}</div>
+                )}
+
+                <div className="req-form-actions">
+                  <button
+                    type="button"
+                    className="req-btn-cancel"
+                    disabled={isSubmitting}
+                    onClick={() => navigate(`/requests/${id}`)}
+                  >
+                    {t.common.cancel}
+                  </button>
+                  <button
+                    type="submit"
+                    className="req-btn-submit"
+                    disabled={!isFormValid() || isSubmitting || !request}
+                  >
+                    {isSubmitting ? <span className="spinner" /> : null}
+                    {f.submitEdit}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
 
-        <Card className="create-request-card" title="✏️ Modifier la demande">
-          <form onSubmit={handleSubmit} className="create-request-form">
-            <div className="form-group">
-              <Input
-                label="Titre de la demande"
-                name="titre"
-                value={formData.titre}
-                onChange={handleChange}
-                placeholder="Ex: Problème de connexion au VPN"
-                error={errors.titre}
-                required
-                maxLength={CHAR_LIMITS.TITLE_MAX}
-              />
-
-              <div className="field-footer">
-                <span className="char-count">
-                  {formData.titre.length} / {CHAR_LIMITS.TITLE_MAX} caractères
-                </span>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <Select
-                label="Type de demande"
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                options={typeOptions}
-                error={errors.type}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description">
-                Description détaillée <span className="required">*</span>
-              </label>
-
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className={errors.description ? 'input-error' : ''}
-                placeholder="Décrivez votre demande en détail..."
-                rows="8"
-                maxLength={CHAR_LIMITS.DESCRIPTION_MAX}
-              />
-
-              <div className="field-footer">
-                <span className="char-count">
-                  {formData.description.length} / {CHAR_LIMITS.DESCRIPTION_MAX} caractères
-                </span>
-
-                {errors.description && (
-                  <span className="error-message">⚠️ {errors.description}</span>
-                )}
-              </div>
-            </div>
-
-            {errors.submit && <div className="submit-error">❌ {errors.submit}</div>}
-
-            <div className="form-actions">
-              <Button
-                variant="secondary"
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => navigate(`/requests/${id}`)}
-              >
-                Annuler
-              </Button>
-
-              <Button
-                variant="primary"
-                type="submit"
-                loading={isSubmitting}
-                disabled={!isFormValid() || isSubmitting || !request}
-              >
-                Enregistrer les modifications
-              </Button>
-            </div>
-          </form>
-        </Card>
+        {/* Tips sidebar */}
+        <aside className="req-form-aside">
+          <div className="req-form-tips">
+            <div className="req-form-tips-header">💡 {f.tipsTitle}</div>
+            <ul className="req-form-tips-list">
+              <li>{f.tip1}</li>
+              <li>{f.tip2}</li>
+              <li>{f.tip3}</li>
+              <li>{f.tip4}</li>
+              <li>{f.tip5}</li>
+            </ul>
+          </div>
+        </aside>
       </div>
     </div>
   )

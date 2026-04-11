@@ -1,129 +1,131 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  FaTachometerAlt,
-  FaPlusCircle,
-  FaBell,
-  FaFileAlt,
-  FaSignOutAlt,
-  FaChevronLeft,
-  FaChevronRight,
-  FaTimes
+  FaHome, FaTachometerAlt, FaBell,
+  FaFileAlt, FaCog, FaSignOutAlt,
 } from 'react-icons/fa'
-import api from '../services/api'
+import { notificationService } from '../services/notificationService'
+import { useAuth } from '../context/useAuth'
+import { useLang } from '../context/LanguageContext'
 import './Sidebar.css'
 
-const Sidebar = ({ isOpen, isCollapsed, onClose, onToggleCollapse }) => {
+const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const location = useLocation()
   const navigate = useNavigate()
-
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  const isManager = user.role === 'gestionnaire'
-
+  const { user, logout } = useAuth()
+  const { t } = useLang()
   const [unreadCount, setUnreadCount] = useState(0)
+
+  const isManager = user?.role === 'gestionnaire'
 
   useEffect(() => {
     const fetchUnread = async () => {
       try {
-        const res = await api.get('/notifications/')
-        const notifications = res.data?.notifications || res.data || []
-        const unread = notifications.filter((n) => !n.lu).length
-        setUnreadCount(unread)
-      } catch (err) {
-        console.error('Erreur notifications:', err)
-      }
+        const all = await notificationService.lister()
+        const stored = new Set(JSON.parse(localStorage.getItem('uqo_read_notifs') || '[]'))
+        setUnreadCount(all.filter(n => !stored.has(n.id)).length)
+      } catch { /* silent */ }
     }
-
     fetchUnread()
-
-    // Rafraîchit toutes les 30 secondes
-    const interval = setInterval(fetchUnread, 30000)
-    return () => clearInterval(interval)
+    const iv = setInterval(fetchUnread, 30000)
+    return () => clearInterval(iv)
   }, [location.pathname])
 
-  const isActive = (path) => {
-    if (path === '/dashboard') return location.pathname === '/dashboard'
-    return location.pathname.startsWith(path)
-  }
+  const isActive = (path) =>
+    location.pathname === path ||
+    (path !== '/dashboard' && path !== '/' && location.pathname.startsWith(path))
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    logout()
     navigate('/')
+  }
+
+  const handleLinkClick = () => {
+    if (isMobileOpen) onMobileClose()
   }
 
   return (
     <>
-      <div className={`sidebar-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
+      {/* Mobile overlay */}
+      <div
+        className={`sidebar-overlay${isMobileOpen ? ' show' : ''}`}
+        onClick={onMobileClose}
+      />
 
-      <aside className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
-        <div className="sidebar-top">
-          <div className="sidebar-brand">
-            {!isCollapsed && (
-              <div>
-                <h3>UQO Requests</h3>
-                <p>{user.nom_complet || 'Utilisateur'}</p>
-              </div>
-            )}
-            <button className="sidebar-mobile-close" onClick={onClose}>
-              <FaTimes />
-            </button>
-          </div>
+      <aside className={`sidebar${isMobileOpen ? ' mobile-open' : ''}`}>
 
-          <button className="sidebar-collapse-btn" onClick={onToggleCollapse}>
-            {isCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
-          </button>
-        </div>
-
+        {/* ── Top nav links ── */}
         <nav className="sidebar-nav">
+          <div className="sidebar-nav-section">{t.nav.home}</div>
+
           <Link
-            to="/dashboard"
-            className={`sidebar-link ${isActive('/dashboard') ? 'active' : ''}`}
-            onClick={onClose}
+            to="/"
+            className={`sidebar-link${isActive('/') && location.pathname === '/' ? ' active' : ''}`}
+            onClick={handleLinkClick}
+            title={t.nav.home}
           >
-            <FaTachometerAlt className="sidebar-icon" />
-            {!isCollapsed && <span>Tableau de bord</span>}
+            <FaHome className="sidebar-icon" />
+            <span className="sidebar-link-text">{t.nav.home}</span>
           </Link>
 
           <Link
-            to="/requests/new"
-            className={`sidebar-link ${isActive('/requests/new') ? 'active' : ''}`}
-            onClick={onClose}
+            to="/dashboard"
+            className={`sidebar-link${isActive('/dashboard') ? ' active' : ''}`}
+            onClick={handleLinkClick}
+            title={t.nav.dashboard}
           >
-            <FaPlusCircle className="sidebar-icon" />
-            {!isCollapsed && <span>Nouvelle demande</span>}
+            <FaTachometerAlt className="sidebar-icon" />
+            <span className="sidebar-link-text">{t.nav.dashboard}</span>
+          </Link>
+
+          <div className="sidebar-divider" />
+          <div className="sidebar-nav-section">{isManager ? t.nav.allRequests : t.nav.myRequests}</div>
+
+          <Link
+            to="/my-requests"
+            className={`sidebar-link${isActive('/my-requests') ? ' active' : ''}`}
+            onClick={handleLinkClick}
+            title={isManager ? t.nav.allRequests : t.nav.myRequests}
+          >
+            <FaFileAlt className="sidebar-icon" />
+            <span className="sidebar-link-text">{isManager ? t.nav.allRequests : t.nav.myRequests}</span>
           </Link>
 
           <Link
             to="/notifications"
-            className={`sidebar-link ${isActive('/notifications') ? 'active' : ''}`}
-            onClick={onClose}
+            className={`sidebar-link${isActive('/notifications') ? ' active' : ''}`}
+            onClick={handleLinkClick}
+            title={t.nav.notifications}
           >
-            <div className="sidebar-icon-wrapper">
+            <div className="sidebar-notif-wrap">
               <FaBell className="sidebar-icon" />
               {unreadCount > 0 && (
-                <span className="notif-badge">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
+                <span className="sidebar-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
             </div>
-            {!isCollapsed && <span>Notifications</span>}
-          </Link>
-
-          <Link
-            to="/dashboard"
-            className={`sidebar-link ${isActive('/requests') ? 'active' : ''}`}
-            onClick={onClose}
-          >
-            <FaFileAlt className="sidebar-icon" />
-            {!isCollapsed && <span>{isManager ? 'Toutes les demandes' : 'Mes demandes'}</span>}
+            <span className="sidebar-link-text">{t.nav.notifications}</span>
           </Link>
         </nav>
 
+        {/* ── Bottom section ── */}
         <div className="sidebar-footer">
-          <button className="sidebar-link sidebar-logout" onClick={handleLogout}>
+          <Link
+            to="/settings"
+            className={`sidebar-link sidebar-settings${isActive('/settings') ? ' active' : ''}`}
+            onClick={handleLinkClick}
+            title="Paramètres / Settings"
+          >
+            <FaCog className="sidebar-icon" />
+            <span className="sidebar-link-text">Paramètres</span>
+          </Link>
+
+          <button
+            className="sidebar-logout"
+            onClick={handleLogout}
+            title={t.nav.logout}
+          >
             <FaSignOutAlt className="sidebar-icon" />
-            {!isCollapsed && <span>Se déconnecter</span>}
+            <span>{t.nav.logout}</span>
           </button>
         </div>
       </aside>

@@ -1,24 +1,18 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { validateEmail, validatePassword, validateName } from '../utils/validators'
 import { ERROR_MESSAGES } from '../utils/constants'
+import { useLang } from '../context/LanguageContext'
 import api from '../services/api'
-import './RegisterPage.css'
-
-import Card from '../components/Card'
-import Input from '../components/Input'
-import Button from '../components/Button'
+import logo from '../assets/logo.png'
+import bg2 from '../assets/bg2.jpg'
+import './LoginPage.css'
 
 const RegisterPage = () => {
   const navigate = useNavigate()
+  const { t } = useLang()
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    passwordConfirmation: ''
-  })
-
+  const [formData, setFormData] = useState({ fullName: '', email: '', password: '', passwordConfirmation: '' })
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -26,18 +20,15 @@ const RegisterPage = () => {
 
   const validateField = (name, value) => {
     let error = ''
-
     switch (name) {
       case 'fullName':
         if (!value.trim()) error = ERROR_MESSAGES.REQUIRED
         else if (!validateName(value)) error = ERROR_MESSAGES.NAME_TOO_SHORT
         break
-
       case 'email':
         if (!value.trim()) error = ERROR_MESSAGES.REQUIRED
         else if (!validateEmail(value)) error = ERROR_MESSAGES.EMAIL_INVALID
         break
-
       case 'password':
         if (!value) error = ERROR_MESSAGES.REQUIRED
         else if (!validatePassword(value)) {
@@ -46,54 +37,34 @@ const RegisterPage = () => {
           else if (!/[0-9]/.test(value)) error = ERROR_MESSAGES.PASSWORD_NO_NUMBER
         }
         break
-
       case 'passwordConfirmation':
         if (!value) error = ERROR_MESSAGES.REQUIRED
         else if (value !== formData.password) error = ERROR_MESSAGES.PASSWORDS_DONT_MATCH
         break
-
-      default:
-        break
+      default: break
     }
-
-    setErrors((prev) => ({ ...prev, [name]: error }))
+    setErrors(p => ({ ...p, [name]: error }))
     return error
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-
-    if (errors.submit) {
-      setErrors((prev) => ({ ...prev, submit: '' }))
-    }
-
+    setFormData(p => ({ ...p, [name]: value }))
+    if (errors.submit) setErrors(p => ({ ...p, submit: '' }))
     validateField(name, value)
-
     if (name === 'password' && formData.passwordConfirmation) {
-      const confirmationError =
-        formData.passwordConfirmation !== value
-          ? ERROR_MESSAGES.PASSWORDS_DONT_MATCH
-          : ''
-
-      setErrors((prev) => ({
-        ...prev,
-        passwordConfirmation: confirmationError
-      }))
+      setErrors(p => ({ ...p, passwordConfirmation: formData.passwordConfirmation !== value ? ERROR_MESSAGES.PASSWORDS_DONT_MATCH : '' }))
     }
   }
 
   const goNext = () => {
     if (step === 1) {
-      const error = validateField('fullName', formData.fullName)
-      if (error || !validateName(formData.fullName)) return
+      const err = validateField('fullName', formData.fullName)
+      if (err || !validateName(formData.fullName)) return
       setStep(2)
-      return
-    }
-
-    if (step === 2) {
-      const error = validateField('email', formData.email)
-      if (error || !validateEmail(formData.email)) return
+    } else if (step === 2) {
+      const err = validateField('email', formData.email)
+      if (err || !validateEmail(formData.email)) return
       setStep(3)
     }
   }
@@ -104,32 +75,18 @@ const RegisterPage = () => {
     else setStep(2)
   }
 
-  const isFormValid = () => {
-    return (
-      validateName(formData.fullName) &&
-      validateEmail(formData.email) &&
-      validatePassword(formData.password) &&
-      formData.password === formData.passwordConfirmation &&
-      !errors.fullName &&
-      !errors.email &&
-      !errors.password &&
-      !errors.passwordConfirmation
-    )
-  }
+  const isFormValid = () =>
+    validateName(formData.fullName) &&
+    validateEmail(formData.email) &&
+    validatePassword(formData.password) &&
+    formData.password === formData.passwordConfirmation &&
+    !Object.values(errors).some(Boolean)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (step === 1 || step === 2) {
-      goNext()
-      return
-    }
-
+    if (step < 3) { goNext(); return }
     if (!isFormValid()) return
-
-    setIsLoading(true)
-    setErrors({})
-
+    setIsLoading(true); setErrors({})
     try {
       await api.post('/auth/register/', {
         nom_complet: formData.fullName,
@@ -137,160 +94,147 @@ const RegisterPage = () => {
         password: formData.password,
         confirmation: formData.passwordConfirmation
       })
-
-      navigate('/login', {
-        state: {
-          message: 'Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter.'
-        }
-      })
-    } catch (error) {
-      console.error('Erreur inscription:', error)
-
-      const data = error.response?.data
-
-      if (error.response?.status === 400 && data?.erreurs) {
-        setErrors({
-          fullName: data.erreurs.nom_complet?.[0] || '',
-          email: data.erreurs.email?.[0] || '',
-          password: data.erreurs.password?.[0] || '',
-          passwordConfirmation: data.erreurs.confirmation?.[0] || '',
-          submit: ''
-        })
-      } else if (error.response?.status === 409 && data?.erreurs?.email) {
-        setErrors({
-          email: data.erreurs.email[0],
-          submit: ''
-        })
+      navigate('/login', { state: { message: 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.' } })
+    } catch (err) {
+      const data = err.response?.data
+      if (err.response?.status === 400 && data?.erreurs) {
+        setErrors({ fullName: data.erreurs.nom_complet?.[0] || '', email: data.erreurs.email?.[0] || '', password: data.erreurs.password?.[0] || '', passwordConfirmation: data.erreurs.confirmation?.[0] || '' })
       } else {
-        setErrors({
-          submit: data?.error || "Une erreur est survenue. Veuillez réessayer."
-        })
+        setErrors({ submit: data?.error || "Une erreur est survenue. Veuillez réessayer." })
       }
-    } finally {
-      setIsLoading(false)
-    }
+    } finally { setIsLoading(false) }
   }
 
+  const steps = [t.auth.step1, t.auth.step2, t.auth.step3.replace('Vérification', 'Mot de passe')]
+
   return (
-    <div className="register-page">
-      <div className="register-container">
-        <Card className="register-card">
-          <div className="register-header">
-            <h1>Créer un compte</h1>
-            <p>Rejoignez UQO-Requests pour gérer vos demandes</p>
+    <div className="auth-page">
+      {/* Left panel */}
+      <div className="auth-left">
+        <div className="auth-left-bg-img" style={{ backgroundImage: `url(${bg2})` }} />
+        <div className="auth-left-logo">
+          <img src={logo} alt="UQO Requests" />
+          <span className="auth-left-logo-name">UQO Requests</span>
+        </div>
+        <div className="auth-left-body">
+          <div>
+            <div className="auth-left-title">{t.auth.leftTitle}</div>
+            <div className="auth-left-sub">{t.auth.leftSubtitle}</div>
+          </div>
+          <div className="auth-left-points">
+            {[t.auth.leftPoint1, t.auth.leftPoint2, t.auth.leftPoint3].map((pt, i) => (
+              <div className="auth-point" key={i}>
+                <div className="auth-point-icon">✓</div>
+                <span className="auth-point-text">{pt}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="auth-left-footer">© 2026 Université du Québec en Outaouais</div>
+      </div>
+
+      {/* Right form panel */}
+      <div className="auth-right">
+        <div className="auth-form-card">
+          <div className="auth-form-header">
+            <h1 className="auth-form-title">{t.auth.registerTitle}</h1>
+            <p className="auth-form-subtitle">{t.auth.registerSubtitle}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="register-form">
+          <div className="auth-steps">
+            {steps.map((label, i) => {
+              const n = i + 1; const isDone = step > n; const isActive = step === n
+              return (
+                <React.Fragment key={n}>
+                  <div className={`auth-step${isActive ? ' active' : ''}${isDone ? ' done' : ''}`}>
+                    <div className="auth-step-dot">{isDone ? '✓' : n}</div>
+                    <span>{label}</span>
+                  </div>
+                  {i < steps.length - 1 && <div className="auth-step-sep" />}
+                </React.Fragment>
+              )
+            })}
+          </div>
+
+          <form onSubmit={handleSubmit} className="auth-form">
             {step === 1 && (
-              <Input
-                label="Nom complet"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="Jean Dupont"
-                error={errors.fullName}
-                required
-                autoComplete="name"
-              />
+              <div className="auth-field">
+                <label className="auth-label">{t.auth.fullNameLabel}</label>
+                <input
+                  className={`auth-input${errors.fullName ? ' has-error' : ''}`}
+                  name="fullName" value={formData.fullName} onChange={handleChange}
+                  placeholder={t.auth.fullNamePlaceholder} autoComplete="name" autoFocus
+                />
+                {errors.fullName && <span className="auth-field-error">{errors.fullName}</span>}
+              </div>
             )}
 
             {step === 2 && (
-              <Input
-                label="Adresse email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="jean.dupont@uqo.ca"
-                error={errors.email}
-                required
-                autoComplete="email"
-              />
+              <div className="auth-field">
+                <label className="auth-label">{t.auth.emailLabel}</label>
+                <input
+                  className={`auth-input${errors.email ? ' has-error' : ''}`}
+                  type="email" name="email" value={formData.email} onChange={handleChange}
+                  placeholder={t.auth.emailPlaceholder} autoComplete="email" autoFocus
+                />
+                {errors.email && <span className="auth-field-error">{errors.email}</span>}
+              </div>
             )}
 
             {step === 3 && (
               <>
-                <div className="password-block">
-                  <Input
-                    label="Mot de passe"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    error={errors.password}
-                    required
-                    autoComplete="new-password"
-                  />
-
-                  <button
-                    type="button"
-                    className="show-password"
-                    onClick={() => setShowPassword((s) => !s)}
-                    disabled={isLoading}
-                  >
-                    {showPassword ? 'Masquer' : 'Afficher'}
-                  </button>
-
-                  <span className="help-text">
-                    Minimum 8 caractères, 1 majuscule, 1 chiffre
-                  </span>
+                <div className="auth-field">
+                  <label className="auth-label">{t.auth.passwordLabel}</label>
+                  <div className="auth-input-wrap">
+                    <input
+                      className={`auth-input${errors.password ? ' has-error' : ''}`}
+                      type={showPassword ? 'text' : 'password'}
+                      name="password" value={formData.password} onChange={handleChange}
+                      placeholder={t.auth.passwordPlaceholder}
+                      autoComplete="new-password" style={{ paddingRight: '70px' }}
+                    />
+                    <button type="button" className="auth-input-suffix" onClick={() => setShowPassword(s => !s)}>
+                      {showPassword ? t.auth.hide : t.auth.show}
+                    </button>
+                  </div>
+                  {errors.password && <span className="auth-field-error">{errors.password}</span>}
+                  <span className="auth-field-hint">{t.auth.passwordHint}</span>
                 </div>
-
-                <Input
-                  label="Confirmer le mot de passe"
-                  name="passwordConfirmation"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.passwordConfirmation}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  error={errors.passwordConfirmation}
-                  required
-                  autoComplete="new-password"
-                />
+                <div className="auth-field">
+                  <label className="auth-label">{t.auth.confirmPasswordLabel}</label>
+                  <input
+                    className={`auth-input${errors.passwordConfirmation ? ' has-error' : ''}`}
+                    type={showPassword ? 'text' : 'password'}
+                    name="passwordConfirmation" value={formData.passwordConfirmation} onChange={handleChange}
+                    placeholder={t.auth.passwordPlaceholder} autoComplete="new-password"
+                  />
+                  {errors.passwordConfirmation && <span className="auth-field-error">{errors.passwordConfirmation}</span>}
+                </div>
               </>
             )}
 
-            {errors.submit && <div className="submit-error">{errors.submit}</div>}
+            {errors.submit && <div className="auth-alert-error">⚠ {errors.submit}</div>}
 
-            <div className="register-actions">
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={goBack}
-                disabled={isLoading}
-              >
-                Retour
-              </Button>
-
+            <div className="auth-actions">
+              <button type="button" className="auth-btn auth-btn-secondary" onClick={goBack} disabled={isLoading}>
+                {t.auth.back}
+              </button>
               {step < 3 ? (
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={goNext}
-                  disabled={isLoading}
-                >
-                  Suivant
-                </Button>
+                <button type="button" className="auth-btn auth-btn-primary" onClick={goNext} disabled={isLoading}>
+                  {t.auth.next}
+                </button>
               ) : (
-                <Button
-                  variant="primary"
-                  type="submit"
-                  loading={isLoading}
-                  disabled={!isFormValid() || isLoading}
-                >
-                  S&apos;inscrire
-                </Button>
+                <button type="submit" className="auth-btn auth-btn-primary" disabled={!isFormValid() || isLoading}>
+                  {isLoading ? <><span className="spinner" /> Inscription...</> : t.auth.submitRegister}
+                </button>
               )}
             </div>
           </form>
 
-          <div className="register-footer">
-            <p>
-              Déjà un compte ? <Link to="/login">Se connecter</Link>
-            </p>
+          <div className="auth-footer">
+            {t.auth.hasAccount} <Link to="/login">{t.auth.signIn}</Link>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )

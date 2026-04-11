@@ -1,7 +1,7 @@
 // frontend/src/context/AuthContext.jsx — Contexte Auth (L1 mock + prêt pour L2 API)
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
 
-const AuthContext = createContext(null)
+export const AuthContext = createContext(null)
 
 // Clés localStorage (centralisées)
 const TOKEN_KEY = 'uqo_token'
@@ -95,6 +95,23 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // Connexion depuis token réel (appelé après verify-login API)
+  const loginFromToken = useCallback((accessToken, userData) => {
+    localStorage.setItem(TOKEN_KEY, accessToken)
+    localStorage.setItem(USER_KEY, JSON.stringify(userData))
+    setToken(accessToken)
+    setUser(userData)
+  }, [])
+
+  // Mise à jour du profil en local (localStorage + état)
+  const updateUser = useCallback((updates) => {
+    setUser(prev => {
+      const updated = { ...prev, ...updates }
+      localStorage.setItem(USER_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
   // Déconnexion : ne fait QUE vider (pas de navigation ici)
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY)
@@ -116,10 +133,12 @@ export function AuthProvider({ children }) {
 
       // actions
       login,
+      loginFromToken,
       register,
       logout,
+      updateUser,
     }
-  }, [token, user, isLoading, estConnecte, estGestionnaire, login, register, logout])
+  }, [token, user, isLoading, estConnecte, estGestionnaire, login, loginFromToken, register, logout, updateUser])
 
   if (isLoading) {
     return (

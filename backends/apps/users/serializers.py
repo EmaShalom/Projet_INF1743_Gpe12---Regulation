@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
 
 from .models import User
 
@@ -40,14 +39,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("confirmation")
-
-        user = User.objects.create(
+        return User.objects.create_user(
             email=validated_data["email"],
             nom_complet=validated_data["nom_complet"],
-            password=make_password(validated_data["password"]),
+            password=validated_data["password"],
         )
-
-        return user
 
 
 class LoginSerializer(serializers.Serializer):

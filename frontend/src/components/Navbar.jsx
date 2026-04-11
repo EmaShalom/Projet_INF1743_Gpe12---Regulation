@@ -1,110 +1,122 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { useState, useRef, useEffect } from 'react'
-import './Navbar.css'
-import { FaUserCircle, FaBars } from 'react-icons/fa'
+import { useState, useMemo } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { FaSearch, FaCog, FaPlus } from 'react-icons/fa'
+import { useAuth } from '../context/useAuth'
+import { useLang } from '../context/LanguageContext'
+import NotificationBell from './NotificationBell'
 import logo from '../assets/logo.png'
+import './Navbar.css'
 
-const Navbar = ({ isAuthenticated, onOpenSidebar }) => {
+const Navbar = ({ isAuthenticated, onMobileToggle }) => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
+  const { t, lang, toggleLang } = useLang()
+  const [search, setSearch] = useState('')
 
-  const [isOpen, setIsOpen] = useState(false)
-  const dropdownRef = useRef(null)
+  const greeting = useMemo(() => {
+    const h = new Date().getHours()
+    if (h < 12) return t.dashboard.goodMorning
+    if (h < 18) return t.dashboard.goodAfternoon
+    return t.dashboard.goodEvening
+  }, [t])
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const today = useMemo(() => {
+    return new Date().toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    })
+  }, [lang])
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/')
+  const firstName = user?.nom_complet?.split(' ')[0] || ''
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && search.trim()) {
+      navigate(`/my-requests?q=${encodeURIComponent(search.trim())}`)
+      setSearch('')
+    }
   }
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   return (
-    <nav className="topbar">
-      <div className="topbar-container">
-        <div className="topbar-left">
-          {isAuthenticated && (
-            <button className="menu-toggle" onClick={onOpenSidebar}>
-              <FaBars />
+    <header className={`topbar${!isAuthenticated ? ' topbar-public' : ''}`}>
+
+      {/* ── Logo ── */}
+      <Link to={isAuthenticated ? '/dashboard' : '/'} className="topbar-brand">
+        <img src={logo} alt="UQO" className="topbar-logo" />
+        <div className="topbar-brand-text">
+          <span className="topbar-brand-name">UQO Requests</span>
+          <span className="topbar-brand-sub">Université du Québec en Outaouais</span>
+        </div>
+      </Link>
+
+      {/* ── Welcome section ── */}
+      {isAuthenticated && user && (
+        <div className="topbar-welcome">
+          <div className="topbar-welcome-greeting">
+            {greeting}{firstName ? ', ' : ''}<strong>{firstName}</strong>
+          </div>
+          <div className="topbar-welcome-date">{today}</div>
+        </div>
+      )}
+
+      {/* ── Search bar ── */}
+      {isAuthenticated && (
+        <div className="topbar-search-wrap">
+          <span className="topbar-search-icon"><FaSearch /></span>
+          <input
+            className="topbar-search"
+            type="text"
+            placeholder={lang === 'fr' ? 'Rechercher une demande...' : 'Search a request...'}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={handleSearch}
+          />
+        </div>
+      )}
+
+      <div className="topbar-spacer" />
+
+      {/* ── Right controls ── */}
+      <div className="topbar-controls">
+        {/* Language toggle */}
+        <button className="topbar-lang-btn" onClick={toggleLang} title="Switch language">
+          {lang === 'fr' ? 'EN' : 'FR'}
+        </button>
+
+        {isAuthenticated ? (
+          <>
+            {/* Settings */}
+            <button
+              className={`topbar-icon-btn${location.pathname === '/settings' ? ' active' : ''}`}
+              onClick={() => navigate('/settings')}
+              title={lang === 'fr' ? 'Paramètres' : 'Settings'}
+            >
+              <FaCog />
             </button>
-          )}
 
-          <Link to={isAuthenticated ? '/dashboard' : '/'} className="topbar-logo">
-            <img src={logo} alt="UQO Requests" className="logo-img" />
-          </Link>
-        </div>
+            {/* Notifications */}
+            <NotificationBell />
 
-        <div className="topbar-right">
-          {isAuthenticated ? (
-            <div className="topbar-user" ref={dropdownRef}>
-              <button
-                className="user-trigger"
-                onClick={() => setIsOpen((prev) => !prev)}
-              >
-                <div className="icon-circle">
-                  <FaUserCircle />
-                </div>
-
-                <span className="user-name">
-                  {user.nom_complet || 'Utilisateur'}
-                </span>
-
-                <span className={`chevron ${isOpen ? 'open' : ''}`}>▾</span>
-              </button>
-
-              {isOpen && (
-                <div className="dropdown-menu">
-                  <button
-                    className="dropdown-item"
-                    onClick={() => {
-                      navigate('/')
-                      setIsOpen(false)
-                    }}
-                  >
-                    Accueil
-                  </button>
-
-                  <button
-                    className="dropdown-item"
-                    onClick={() => {
-                      navigate('/dashboard')
-                      setIsOpen(false)
-                    }}
-                  >
-                    Tableau de bord
-                  </button>
-
-                  <button
-                    className="dropdown-item"
-                    onClick={() => {
-                      handleLogout()
-                      setIsOpen(false)
-                    }}
-                  >
-                    Se déconnecter
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="topbar-auth">
-              <Link to="/login" className="topbar-link">Se connecter</Link>
-              <Link to="/register" className="topbar-register">S'inscrire</Link>
-            </div>
-          )}
-        </div>
+            {/* New Request */}
+            <button className="topbar-new-btn" onClick={() => navigate('/requests/new')}>
+              <FaPlus className="topbar-new-icon" />
+              <span>{t.nav.newRequest}</span>
+            </button>
+          </>
+        ) : (
+          <div className="topbar-auth-links">
+            <Link to="/login" className="topbar-login-link">{t.nav.login}</Link>
+            <Link to="/register" className="topbar-register-btn">{t.nav.register}</Link>
+          </div>
+        )}
       </div>
-    </nav>
+
+      {/* ── Mobile hamburger ── */}
+      {isAuthenticated && (
+        <button className="topbar-mobile-toggle" onClick={onMobileToggle} aria-label="Menu">
+          ☰
+        </button>
+      )}
+    </header>
   )
 }
 

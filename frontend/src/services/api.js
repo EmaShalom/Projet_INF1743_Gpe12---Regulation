@@ -13,7 +13,7 @@ api.interceptors.request.use((config) => {
     config.url += '/';
   }
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('uqo_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -25,10 +25,15 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh');
-      localStorage.removeItem('user');
-      window.location.href = '/login?session=expired';
+      const token = localStorage.getItem('uqo_token');
+      // Don't wipe the session for mock dev tokens — only real expired JWTs
+      const isMockToken = token?.startsWith('mock-jwt-');
+      if (!isMockToken) {
+        localStorage.removeItem('uqo_token');
+        localStorage.removeItem('refresh');
+        localStorage.removeItem('uqo_user');
+        window.location.href = '/login?session=expired';
+      }
     }
 
     return Promise.reject(error);
