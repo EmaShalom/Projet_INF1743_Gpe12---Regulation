@@ -5,7 +5,6 @@ import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Routes, Route, Link } from 'react-router-dom'
 
-import TestPage from './pages/TestPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -18,8 +17,6 @@ import NotificationsPage from './pages/NotificationsPage'
 import MyRequestsPage from './pages/MyRequestsPage'
 import SettingsPage from './pages/SettingsPage'
 
-import './App.css'
-
 function App() {
   return (
     <BrowserRouter>
@@ -27,7 +24,6 @@ function App() {
         <AuthProvider>
           <Layout>
             <Routes>
-              <Route path="/test" element={<TestPage />} />
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />

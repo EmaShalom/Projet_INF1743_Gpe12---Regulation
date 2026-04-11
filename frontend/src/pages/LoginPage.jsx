@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { validateEmail } from '../utils/validators'
 import { useLang } from '../context/LanguageContext'
 import api from '../services/api'
